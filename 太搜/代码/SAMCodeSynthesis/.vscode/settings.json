@@ -1,0 +1,13 @@
+{
+    "files.autoGuessEncoding": true,
+    "files.associations": {
+        "ip.h": "c",
+        "std_utils.h": "c",
+        "std_basal.h": "c",
+        "checkcal16.h": "c",
+        "initvar.h": "c",
+        "uartrs422.h": "c",
+        "sam.h": "c"
+    },
+    "Codegeex.GenerationPreference": "automatic"
+}

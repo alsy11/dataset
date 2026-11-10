@@ -1,0 +1,290 @@
+.. include:: <isonum.txt>
+
+.. |timestamp| date:: %Y-%m-%d %H:%M:%S
+
+.. |foxbms-unversioned| replace:: foxBMS
+.. |foxbms| replace:: foxBMS 2
+.. |foxbms.org| replace:: https://foxbms.org
+.. |docs.foxbms.org| replace:: https://docs.foxbms.org
+.. |github_foxbms| replace:: https://github.com/foxBMS/
+.. |foxbms_repository| replace:: https://github.com/foxBMS/foxbms-2
+.. _Fraunhofer IISB: https://www.iisb.fraunhofer.de
+
+.. _BSD 3-Clause License: https://opensource.org/licenses/BSD-3-Clause
+.. |python| replace:: Python
+.. |url_python| replace:: https://www.python.org
+.. |url_python_releases| replace:: https://www.python.org/downloads/
+.. |virtual-python-environment| replace:: virtual Python environment
+
+.. |freertos| replace:: FreeRTOS
+.. |freertos-kernel| replace:: FreeRTOS kernel
+.. |url_freertos_releases| replace:: https://github.com/FreeRTOS/FreeRTOS-Kernel/releases
+
+.. |freertos-plus-tcp| replace:: FreeRTOS-Plus-TCP
+.. |freertos-plus-tcp-library| replace:: FreeRTOS-Plus-TCP Library
+.. |url_freertos-plus-tcp-library_releases| replace:: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/releases/
+
+.. |doxygen| replace:: Doxygen
+.. |url_doxygen| replace:: https://doxygen.nl
+.. |url_doxygen_releases| replace:: https://doxygen.nl/download.html
+
+.. |fox-cli| replace:: ``fox CLI``
+.. |fox-cli-api| replace:: ``fox CLI`` API
+.. |fox-cli-package| replace:: ``fox CLI`` package
+.. |fox-cli-package-name| replace:: ``foxbms-fox-cli``
+.. |fox-cli-package-name-import| replace:: ``fox_cli``
+.. |fox-py| replace:: ``fox.py``
+
+.. |graphviz| replace:: Graphviz
+.. |url_graphviz| replace:: https://graphviz.org/
+.. |url_graphviz_releases| replace:: https://graphviz.org/download/
+
+.. |git| replace:: Git
+.. |url_git| replace:: https://git-scm.com/
+
+.. |ti-code-composer-studio| replace:: TI Code Composer Studio
+.. |ti-ccs| replace:: TI CCS
+.. |url_ti-code-composer-studio| replace:: https://www.ti.com/tool/CCSTUDIO
+.. |url_ti-code-composer-studio_releases| replace:: https://www.ti.com/tool/CCSTUDIO#downloads
+.. |version_ti-code-composer-studio| replace:: ``12.8.1``
+.. |ti-arm-cgt| replace:: TI ARM CGT
+.. _Code Composer Studio: https://www.ti.com/tool/download/CCSTUDIO/12.8.1
+
+.. |ti-halcogen| replace:: TI HALCoGen
+.. |url_ti-halcogen| replace:: https://www.ti.com/tool/HALCOGEN
+.. |url_ti-halcogen_releases| replace:: https://www.ti.com/tool/HALCOGEN
+.. |version_ti-halcogen| replace:: ``04.07.01``
+
+.. |version_pcan_symbol_editor| replace:: ``Version 6.5.2``
+.. |version_sym_file| replace:: ``Version 6.0``
+
+.. |drawio-desktop| replace:: drawio-desktop
+.. |url_drawio-desktop| replace:: https://github.com/jgraph/drawio-desktop/releases
+
+.. |waf| replace:: Waf
+.. |url_waf| replace:: https://waf.io/
+
+.. |pre-commit| replace:: pre-commit
+.. |url_pre-commit| replace:: https://pre-commit.com/
+.. |pre-commit-hooks| replace:: pre-commit Hooks
+
+.. |ruby| replace:: Ruby
+.. |url_ruby| replace:: https://www.ruby-lang.org/en
+.. |url_ruby_license| replace:: https://www.ruby-lang.org/en/about/license.txt
+.. |ruby-installer| replace:: RubyInstaller
+.. |url_ruby-installer| replace:: https://rubyinstaller.org/downloads/
+.. _Ruby: https://www.ruby-lang.org/
+
+.. |cmock| replace:: CMock
+.. |url_cmock| replace:: https://github.com/ThrowTheSwitch/CMock/releases
+.. |unity| replace:: Unity
+.. |c_exception| replace:: CException
+
+.. |mingw-w64| replace:: mingw-w64
+
+.. |gcc| replace:: GCC
+
+.. _GCOVR: https://gcovr.com/en/stable/index.html
+
+.. _Visual Studio Code: https://code.visualstudio.com/
+.. |vs-code| replace:: VS Code
+
+.. _MISRA C: https://www.misra.org.uk/
+
+.. |soa| replace:: *SOA*
+.. |soc| replace:: *SOC*
+.. |soe| replace:: *SOE*
+.. |soh| replace:: *SOH*
+.. |sof| replace:: *SOF*
+.. |mol| replace:: *MOL*
+.. |rsl| replace:: *RSL*
+.. |msl| replace:: *MSL*
+
+.. |adi-full| replace:: Analog Devices
+.. |ltc-full| replace:: Linear Technology
+.. |ti-full| replace:: Texas Instruments
+.. |mxm-full| replace:: Maxim Integrated
+.. |nxp-full| replace:: NXP Semiconductors
+
+.. |adi| replace:: ADI
+.. |ltc| replace:: LTC
+.. |ti| replace:: TI
+.. |mxm| replace:: MAXIM
+.. |nxp| replace:: NXP
+
+.. |msd| replace:: Manual Service Disconnect
+
+.. |ti-tms570| replace:: TI TMS570
+.. |ti-tms570lc4357| replace:: TI TMS570LC4357
+
+.. |ltc-ltc6820| replace:: LTC LTC6820
+.. |max-max17852| replace:: Maxim MAX17852
+.. |max-max17853| replace:: Maxim MAX17853
+.. |nxp-mc33664| replace:: NXP MC33664
+
+.. |ltc-ltc6804-1| replace:: LTC LTC6804-1
+.. |ltc-ltc6811-1| replace:: LTC LTC6811-1
+.. |ltc-ltc6813-1| replace:: LTC LTC6813-1
+.. |max-max17841b| replace:: Maxim MAX17841B
+.. |nxp-mc33775a| replace:: NXP MC33775A
+.. |adi-ades1830| replace:: ADI ADES1830
+
+.. |bms-master|     replace:: BMS-Master
+.. |bms-masters|     replace:: BMS-Masters
+.. |bms-interface|  replace:: BMS-Interface
+.. |bms-interfaces|  replace:: BMS-Interfaces
+.. |bms-slave|      replace:: BMS-Slave
+.. |bms-slaves|     replace:: BMS-Slaves
+.. |bms-extension|  replace:: BMS-Extension
+
+.. |foxbms-bms-master|  replace:: foxBMS BMS-Master
+.. |foxbms-bms-masters| replace:: foxBMS BMS-Masters
+
+.. |I2C| replace:: I\ :sup:`2`\ C
+.. |SPI| replace:: SPI
+
+.. |tbc| replace:: This section of the documentation is not yet complete.
+
+.. |VBAT|  replace:: ``VBAT``
+.. |VBAT-|  replace:: ``VBAT-``
+.. |FUSED_VBAT-|  replace:: ``FUSED_VBAT-``
+.. |VBAT+|  replace:: ``VBAT+``
+.. |OUT-|  replace:: ``OUT-``
+.. |OUT+|  replace:: ``OUT+``
+.. |IN-|  replace:: ``IN-``
+.. |IN+|  replace:: ``IN+``
+
+.. |NC|  replace:: *not connected*
+
+.. |CELL_0+|  replace:: ``CELL_0+``
+.. |CELL_1+|  replace:: ``CELL_1+``
+.. |CELL_2+|  replace:: ``CELL_2+``
+.. |CELL_3+|  replace:: ``CELL_3+``
+.. |CELL_4+|  replace:: ``CELL_4+``
+.. |CELL_5+|  replace:: ``CELL_5+``
+.. |CELL_6+|  replace:: ``CELL_6+``
+.. |CELL_7+|  replace:: ``CELL_7+``
+.. |CELL_8+|  replace:: ``CELL_8+``
+.. |CELL_9+|  replace:: ``CELL_9+``
+.. |CELL_10+|  replace:: ``CELL_10+``
+.. |CELL_11+|  replace:: ``CELL_11+``
+.. |CELL_12+|  replace:: ``CELL_12+``
+.. |CELL_13+|  replace:: ``CELL_13+``
+.. |CELL_14+|  replace:: ``CELL_14+``
+.. |CELL_15+|  replace:: ``CELL_15+``
+.. |CELL_16+|  replace:: ``CELL_16+``
+.. |CELL_17+|  replace:: ``CELL_17+``
+
+.. |CELL_0-|  replace:: ``CELL_0-``
+.. |CELL_1-|  replace:: ``CELL_1-``
+.. |CELL_2-|  replace:: ``CELL_2-``
+.. |CELL_3-|  replace:: ``CELL_3-``
+.. |CELL_4-|  replace:: ``CELL_4-``
+.. |CELL_5-|  replace:: ``CELL_5-``
+.. |CELL_6-|  replace:: ``CELL_6-``
+.. |CELL_7-|  replace:: ``CELL_7-``
+.. |CELL_8-|  replace:: ``CELL_8-``
+.. |CELL_9-|  replace:: ``CELL_9-``
+.. |CELL_10-|  replace:: ``CELL_10-``
+.. |CELL_11-|  replace:: ``CELL_11-``
+.. |CELL_12-|  replace:: ``CELL_12-``
+.. |CELL_13-|  replace:: ``CELL_13-``
+.. |CELL_14-|  replace:: ``CELL_14-``
+.. |CELL_15-|  replace:: ``CELL_15-``
+.. |CELL_16-|  replace:: ``CELL_16-``
+.. |CELL_17-|  replace:: ``CELL_17-``
+
+.. |DC+|  replace:: ``DC+``
+.. |DC-|  replace:: ``DC-``
+
+.. |spidat1|  replace:: ``SPIDAT1``
+.. |cshold|   replace:: ``CSHOLD``
+
+.. |isospi|   replace:: ``isoSPI``
+.. |isospi_p| replace:: ``isoSPI_P``
+.. |isospi_n| replace:: ``isoSPI_N``
+.. |isospi1|  replace:: ``isoSPI_1``
+.. |isospi2|  replace:: ``isoSPI_2``
+.. |isospi3|  replace:: ``isoSPI_3``
+.. |isospi4|  replace:: ``isoSPI_4``
+
+.. |tpl|      replace:: ``TPL``
+.. |tpl-high| replace:: ``TPL High``
+.. |tpl-low|  replace:: ``TPL Low``
+.. |tpl1|     replace:: ``TPL_1``
+.. |tpl2|     replace:: ``TPL_2``
+
+.. |tcp-ip-stack| replace:: TCP/IP stack
+.. |tcp-ip| replace:: TCP/IP
+.. |emac| replace:: EMAC
+.. |echo-server| replace:: Echo Server
+
+.. |lauterbach-debugger-shortcut| replace:: ``build/run_t32marm.lnk``
+
+.. |bootloader-host-application| replace:: Bootloader Host Application
+.. |embedded-bootloader| replace:: Embedded Bootloader
+
+.. |uart| replace:: UART
+
+.. |idle-task|             replace:: Idle Task
+.. |engine-task|           replace:: Engine Task
+.. |afe-task|              replace:: AFE Task
+.. |i2c-task|              replace:: I2C Task
+.. |uart-task|             replace:: UART Task
+.. |emac-task|             replace:: EMAC Task
+.. |1ms-task|              replace:: 1ms Task
+.. |10ms-task|             replace:: 10ms Task
+.. |100ms-task|            replace:: 100ms Task
+.. |100ms-algorithms-task| replace:: 100ms Algorithm Task
+.. |ip-task|               replace:: IP-Task
+.. |ip-application-tasks|  replace:: IP Application Tasks
+
+.. |bms-config-file| replace:: ``conf/bms/bms.json``
+.. |foxbms-sym| replace:: ``tools/dbc/foxbms.sym``
+.. |foxbms-dbc| replace:: ``tools/dbc/foxbms.dbc``
+
+.. |virtual-testing-platform| replace:: Virtual Testing Platform
+.. |vtp| replace:: VTP
+.. |hlcu| replace:: HLCU
+
+
+.. |adc| replace:: ADC
+.. |pex| replace:: PEX
+.. |sps| replace:: SPS
+.. |mcu| replace:: MCU
+.. |rtc| replace:: RTC
+
+.. |fused-string-voltage-m|             replace::                 ``FusedStringVoltageM``
+.. |fused-pack-voltage|                 replace::                 ``FusedPackVoltage``
+.. |string-voltage-m|                   replace::                 ``StringVoltageM``
+.. |system-voltage|                     replace::                 ``SystemVoltage``
+.. |pack-voltage|                       replace::                 ``PackVoltage``
+.. |pack-voltage-m|                     replace::                 ``PackVoltageM``
+.. |system-voltage2|                    replace::                 ``SystemVoltage2``
+.. |pack-current|                       replace::                 ``PackCurrent``
+.. |string-current-m|                   replace::                 ``StringCurrentM``
+
+.. |fused-string-voltage-m-abbr-full|   replace:: V\ :sub:`FSm` (``FusedStringVoltageM``)
+.. |fused-pack-voltage-abbr-full|       replace:: V\ :sub:`FP`  (``FusedPackVoltage``)
+.. |string-voltage-m-abbr-full|         replace:: V\ :sub:`Sm`  (``StringVoltageM``)
+.. |system-voltage-abbr-full|           replace:: V\ :sub:`SV`  (``SystemVoltage``)
+.. |pack-voltage-abbr-full|             replace:: V\ :sub:`P`   (``PackVoltage``)
+.. |pack-voltage-m-abbr-full|           replace:: V\ :sub:`Pm`  (``PackVoltageM``)
+.. |system-voltage2-abbr-full|          replace:: V\ :sub:`SV2` (``SystemVoltage2``)
+.. |pack-current-abbr-full|             replace:: I\ :sub:`P`   (``PackCurrent``)
+.. |string-current-m-abbr-full|         replace:: I\ :sub:`Sm`  (``StringCurrentM``)
+
+.. |fused-string-voltage-m-abbr|        replace:: V\ :sub:`FSm`
+.. |fused-pack-voltage-abbr|            replace:: V\ :sub:`FP`
+.. |string-voltage-m-abbr|              replace:: V\ :sub:`Sm`
+.. |system-voltage-abbr|                replace:: V\ :sub:`SV`
+.. |pack-voltage-abbr|                  replace:: V\ :sub:`P`
+.. |pack-voltage-m-abbr|                replace:: V\ :sub:`Pm`
+.. |system-voltage2-abbr|               replace:: V\ :sub:`SV2`
+.. |pack-current-abbr|                  replace:: I\ :sub:`P`
+.. |string-current-m-abbr|              replace:: I\ :sub:`Sm`
+
+.. |sphinx| replace:: Sphinx
+
+.. |build| replace:: ``build``
+.. |configure| replace:: ``configure``

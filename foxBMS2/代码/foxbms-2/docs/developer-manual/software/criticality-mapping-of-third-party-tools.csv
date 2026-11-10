@@ -1,0 +1,12 @@
+Tool                        ; Class                         ; Criticality ; Criticality comment
+|git|                       ; version control system        ; T3          ; used to version sources in a repository
+|ti-arm-cgt|                ; compiler                      ; T3          ; used to build code for the target
+|ti-arm-cgt|                ; linker                        ; T3          ; used to link code for the target
+|gcc|                       ; compiler                      ; T2          ; used to build and link code for unit tests
+|vs-code|                   ; text editor                   ; T1          ; \-
+|waf|                       ; build automation system       ; T3          ; controls build process\; generates version dependent code
+sphinx                      ; documentation tools           ; T1          ; just a rendering tool for the documentation text files
+|cmock|                     ; mocking framework             ; T2          ; generates mock functions for isolated C unit testing
+|unity|                     ; unit testing framework        ; T2          ; Executes unit test assertions and reports test results
+|c_exception|               ; exception handling library    ; T2          ; provides exception handling mechanism for C unit tests
+*Custom HIL implementation* ; test runner                   ; T3          ; verifies the application behavior

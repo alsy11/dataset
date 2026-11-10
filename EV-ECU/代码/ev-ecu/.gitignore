@@ -1,0 +1,21 @@
+# VS code config
+.vscode
+
+# .DS store files
+.DS_Store
+
+# Test files
+*.gcno
+*.gcda
+*.o
+*.su
+test/coverage/
+test/coverage_report/
+test/main_coverage.info
+test/build/
+
+# Eclipse files
+.settings/
+Debug/
+evfirmware-vcu.launch
+

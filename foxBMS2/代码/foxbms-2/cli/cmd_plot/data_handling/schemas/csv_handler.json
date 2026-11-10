@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "general": {
+      "type": "object",
+      "properties": {
+        "skip": {
+          "type": "integer"
+        },
+        "precision": {
+          "type": "integer"
+        },
+        "null value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "skip",
+        "precision"
+      ]
+    },
+    "columns": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "enum": [
+          "string",
+          "float",
+          "int",
+          "datetime"
+        ]
+      }
+    }
+  },
+  "required": [
+    "general",
+    "columns"
+  ]
+}

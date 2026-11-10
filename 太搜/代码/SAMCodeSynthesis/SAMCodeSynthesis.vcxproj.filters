@@ -1,0 +1,240 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="GetUartData\Implement\GetUartData.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="B_TcProcess\Implement\B_TcProcess.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CalculateGyroDg\Implement\CalculateGyroDg.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CalculateGyroRs\Implement\CalculateGyroRs.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CheckCal\Implement\CheckCal.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CheckCal16\Implement\CheckCal16.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Delay\Implement\Delay.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DSSDataGet\Implement\DSSDataGet.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="FaultJudgeProceed\Implement\FaultJudgeProceed.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="GyroChoose\Implement\GyroChoose.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="GyroPick\Implement\GyroPick.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="GyroStateGet\Implement\GyroStateGet.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="InitVar\Implement\InitVar.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="JetDataGet\Implement\JetDataGet.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="LimitControllerInput\Implement\LimitControllerInput.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="LimitCtrlAngleInput\Implement\LimitCtrlAngleInput.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="LimitCtrlRateInput\Implement\LimitCtrlRateInput.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="NoctrlJudge\Implement\NoctrlJudge.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="PseudoRate\Implement\PseudoRate.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="SAMSubModeCruise\Implement\SAMSubModeCruise.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="SAMSubModeDamp\Implement\SAMSubModeDamp.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="SAMSubModePitch\Implement\SAMSubModePitch.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="SAMSubModeRoll\Implement\SAMSubModeRoll.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="SendUartData\Implement\SendUartData.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftFaultJudgeSP\Implement\SoftFaultJudgeSP.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ThreeAxisController\Implement\ThreeAxisController.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ThrusterCtrlLogic\Implement\ThrusterCtrlLogic.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TMProcess\Implement\TMProcess.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TcDataCheck\Implement\TcDataCheck.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="std_utils.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="UartInit\Implement\UartInit.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="GyroAttiDetermine\Implement\GyroAttiDetermine.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="SAM.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CheckCal08\Implement\CheckCal08.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="JetCtrlSend\Implement\JetCtrlSend.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GetUartData\Implement\GetUartData.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="IP.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="std_basal.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="std_utils.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="B_TcProcess\Implement\B_TcProcess.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CalculateGyroDg\Implement\CalculateGyroDg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CalculateGyroRs\Implement\CalculateGyroRs.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CheckCal\Implement\CheckCal.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CheckCal16\Implement\CheckCal16.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Delay\Implement\Delay.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DSSDataGet\Implement\DSSDataGet.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="FaultJudgeProceed\Implement\FaultJudgeProceed.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="GyroChoose\Implement\GyroChoose.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="GyroPick\Implement\GyroPick.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="GyroStateGet\Implement\GyroStateGet.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="InitVar\Implement\InitVar.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="JetDataGet\Implement\JetDataGet.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="LimitControllerInput\Implement\LimitControllerInput.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="LimitCtrlAngleInput\Implement\LimitCtrlAngleInput.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="LimitCtrlRateInput\Implement\LimitCtrlRateInput.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="NoctrlJudge\Implement\NoctrlJudge.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="PseudoRate\Implement\PseudoRate.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="SAMSubModeCruise\Implement\SAMSubModeCruise.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="SAMSubModeDamp\Implement\SAMSubModeDamp.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="SAMSubModePitch\Implement\SAMSubModePitch.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="SAMSubModeRoll\Implement\SAMSubModeRoll.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="SendUartData\Implement\SendUartData.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="SoftFaultJudgeSP\Implement\SoftFaultJudgeSP.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreeAxisController\Implement\ThreeAxisController.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ThrusterCtrlLogic\Implement\ThrusterCtrlLogic.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="TMProcess\Implement\TMProcess.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="TcDataCheck\Implement\TcDataCheck.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="UartInit\Implement\UartInit.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="GyroAttiDetermine\Implement\GyroAttiDetermine.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="SAM.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CheckCal08\Implement\CheckCal08.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="JetCtrlSend\Implement\JetCtrlSend.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitignore" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,40 @@
+{
+  "tasks": [
+    {
+      "label": "Project: Configure",
+      "type": "process",
+      "group": "build",
+      "command": "fox-wrapper-place-holder",
+      "args": [
+        "waf",
+        "configure",
+        "-c",
+        "yes"
+      ],
+      "problemMatcher": [],
+      "options": {
+        "cwd": "place-holder"
+      }
+    },
+    {
+      "label": "Unit Test: Build active file",
+      "type": "process",
+      "group": {
+        "kind": "build"
+      },
+      "command": "fox-wrapper-place-holder",
+      "args": [
+        "waf",
+        "build_app_unit_test_gcc",
+        "--targets=${fileBasenameNoExtension}"
+      ],
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "options": {
+        "cwd": "place-holder"
+      }
+    }
+  ],
+  "version": "2.0.0"
+}

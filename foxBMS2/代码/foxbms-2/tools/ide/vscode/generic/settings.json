@@ -1,0 +1,140 @@
+{
+  "C_Cpp.autoAddFileAssociations": true,
+  "C_Cpp.clang_format_fallbackStyle": "none",
+  "C_Cpp.clang_format_style": "file",
+  "[json]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2
+  },
+  "[c]": {
+    "editor.formatOnSave": true,
+    "editor.rulers": [
+      {
+        "column": 79
+      },
+      {
+        "color": "#ff0000",
+        "column": 119
+      }
+    ],
+    "files.encoding": "iso88591"
+  },
+  "[css]": {
+    "editor.formatOnSave": false
+  },
+  "[html]": {
+    "editor.formatOnSave": false
+  },
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.rulers": [
+      79
+    ],
+    "files.encoding": "utf8"
+  },
+  "[restructuredtext]": {
+    "editor.formatOnSave": true,
+    "editor.rulers": [
+      79
+    ]
+  },
+  "[shellscript]": {
+    "files.eol": "\n"
+  },
+  "css.validate": false,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.formatOnSave": true,
+  "editor.guides.bracketPairs": "active",
+  "editor.insertSpaces": true,
+  "editor.rulers": [
+    79
+  ],
+  "editor.tabSize": 4,
+  "extensions.ignoreRecommendations": true,
+  "files.associations": {
+    "*.cmm": "practice",
+    "*.h": "c",
+    "*.pp": "c",
+    "*.ppm": "c",
+    "*.ppr": "c",
+    "*.pprs": "c",
+    "**/docs/developer-manual/update-processes/*/update-*.txt": "restructuredtext",
+    "**/docs/general/changelog-entries/v*.txt": "restructuredtext",
+    "**/docs/macros.txt": "restructuredtext",
+    "**/docs/units.txt": "restructuredtext",
+    "**/src/**/main/*.cmd": "linkerscript",
+    "**/tools/debugger/lauterbach/*.cmm*": "practice",
+    "**/tools/debugger/lauterbach/*.t32*": "practice",
+    "**/wscript": "python"
+  },
+  "files.autoGuessEncoding": true,
+  "files.encoding": "utf8",
+  "files.exclude": {
+    "**/dist": true,
+    "**/master-artifacts": true,
+    "**/*.egg-info": true,
+    "**/*.gcov": true,
+    "**/*.log": true,
+    "**/.mypy_cache/**": true,
+    "**/*.stats": true,
+    "**/*.tar.gz": true,
+    "**/*.zip": true,
+    "**/.DS_Store": true,
+    "**/.coverage*": true,
+    "**/.git": true,
+    "**/.hg": true,
+    "**/.lock-waf_*_build": true,
+    "**/*.drawio.bkp": true,
+    "**/.svn": true,
+    "**/.vscode/**": true,
+    "**/.wafpickle-*": true,
+    "**/CVS": true,
+    "**/Thumbs.db": true,
+    "**/__pycache__/**": true,
+    "**/build/**/": true,
+    "**/conf/hcg/include/**": true,
+    "**/tmp/**": true,
+    ".github/**": true,
+    ".ruff_cache": true,
+    "build/*_spa_ti_arm_cgt/**": true,
+    "build/c4che/**": true,
+    "build/conf_check_*/**": true,
+    "build/predefined_defines/**": true,
+    "build/tmp**": true
+  },
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "files.trimTrailingWhitespace": true,
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/.hg/store/**": true,
+    "**/node_modules/*/**": true,
+    "**/__pycache__/**": true,
+    "**/build/**/*.pp": true,
+    "**/build/**/*.ppr": true,
+    "**/build/**/*.pprs": true,
+    "**/conf/hcg/include/**": true,
+    "**/waf-3-*/**": true
+  },
+  "pylint.args": [
+    "place-holder"
+  ],
+  "python.terminal.activateEnvironment": false,
+  "search.exclude": {
+    "**/*.code-search": true,
+    "**/bower_components": true,
+    "**/node_modules": true,
+    "**/conf/hcg/include/**": true,
+    "**build/**/*.obj": true,
+    "**build/**/*.pp": true,
+    "**build/**/*.ppr": true,
+    "**build/**/*.pprs": true
+  },
+  "task.autoDetect": "off",
+  "terminal.integrated.persistentSessionReviveProcess": "never",
+  "yaml.completion": true,
+  "yaml.format.enable": true,
+  "yaml.format.singleQuote": false,
+  "yaml.validate": true
+}

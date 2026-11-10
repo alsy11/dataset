@@ -1,0 +1,11 @@
+# do not check in generated files
+
+crcfunction.c
+crc8function.c
+crc16function.c
+
+# Created by https://www.gitignore.io/api/jupyternotebook
+# Edit at https://www.gitignore.io/?templates=jupyternotebook
+
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*

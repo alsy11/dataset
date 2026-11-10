@@ -1,0 +1,331 @@
+; Debugger Startup Program for TRACE32
+; This startup program can be modified according to your needs.
+
+GLOBAL &bootloader_elf_searchpath &bootloader_elf_start &bootloader_elf_end
+GLOBAL &app_elf_searchpath &app_elf_start &app_elf_end
+GLOBAL &source_path &working_path &working_path_all
+
+GLOBAL &bootloader_elf_file &app_elf_file
+GLOBAL &update_program_information_script
+
+; set default .elf files for bootloader and app relativ to this cmm-file
+&bootloader_elf_file=OS.PPD()+"\@{BOOTLOADER_ELF_FILE}"
+&app_elf_file=OS.PPD()+"\@{APP_ELF_FILE}"
+
+;set default search path to this cmm-file
+&bootloader_elf_searchpath=OS.PPD()+"\@{BOOTLOADER_ELF_SEARCHPATH}"
+&app_elf_searchpath=OS.PPD()+"\@{APP_ELF_SEARCHPATH}"
+
+; list of macros
+&macro_values = OS.PPD()+"\load_macro_values.cmm"
+
+GLOBAL &directory_workingpath &directory_temppath &directory_systempath &directory_homepath
+GLOBAL &file_currentpractice
+&directory_workingpath=OS.PWD()
+&directory_temppath=OS.PTD()
+&directory_systempath=OS.PSD()
+&directory_homepath=OS.PHD()
+
+&file_currentpractice=OS.PPF()
+
+&update_program_information_script=OS.PPD()+"\@{UPDATE_PROGRAM_INFORMATION_SCRIPT}"
+
+; bootloader start address range
+&bootloader_elf_start="0x00000000"
+&bootloader_elf_end="0x00020000"
+
+; foxbms start address range
+&app_elf_start="0x0001FFE0"
+&app_elf_end="0x003FFFFF"
+
+cd &working_path
+
+; open some windows
+  WinCLEAR
+  WinPOS 0% 0% 50% 50%
+  Data.List
+  WinPOS 50% 0% 50% 50%
+  Var.Frame /Locals /Caller
+  WinPOS 50% 50% 50% 50%
+  Var.Watch %E
+  Var.AddWatch data_blockInsulation os_timer bms_tablePackValues ilck_state data_blockInterlockFeedback imd_state cont_contactorStates sps_channelStatus data_blockStateRequest sys_state bms_state fram_version data_blockCellVoltage data_blockCellTemperature data_blockCurrent data_blockErrors data_blockMsl data_blockRsl data_blockMol
+
+;choose hex mode for input
+radix hex
+
+sys.option IMASKASM ON
+
+;Add some extra buttons to the toolbar
+
+sYmbol.Browse
+
+ menu.rp
+ (
+    ;======================================================================
+    ;  Toolbar definition
+    ;======================================================================
+    add
+    toolbar
+    (
+        ;
+        toolitem "Select Application .elf File"   ":load"
+        (
+            IF ("&app_elf_file"=="")
+            (
+                &app_elf_file=OS.PSD()+"\dummy.elf"
+            )
+            &app_elf_searchpath=OS.FILE.PATH(&app_elf_file)
+            IF ("&app_elf_searchpath"=="")
+            (
+                &app_elf_searchpath=OS.PPD()
+                PRINT "elf directory not found, use default"
+            )
+
+            DIALOG.File "&app_elf_searchpath\*"
+            ENTRY %line &app_elf_file
+            IF ("&app_elf_file"=="")
+            (
+                PRINT "elf file not found"
+                ENDDO
+            )
+            IF (STRING.FIND("&app_elf_file"," "))
+            (
+                PRINT %ERROR "Sorry: do not use filenames which contain spaces: '&app_elf_file'!"
+                ENDDO
+            )
+            PRINT "selected file: &app_elf_file"
+            ENDDO
+        )
+        toolitem "Program foxBMS Application Elf File"   ":flash"
+        (
+            PRINT "Erasing Program Code: (&app_elf_start)--(&app_elf_end)"
+            wait 0.1s
+            FLASH.ReProgram (&app_elf_start)--(&app_elf_end)
+            Data.Set (&app_elf_start)--(&app_elf_end) 0x0
+            Data.LOAD.Elf &app_elf_file (&app_elf_start)--(&app_elf_end)
+            wait 0.1s
+            do &update_program_information_script
+            wait 0.1s
+            FLASH.ReProgram OFF
+            PRINT "foxBMS 2 application .ELF file has been flashed"
+
+            ; Reset the target again
+            SYStem.Up
+            ENDDO
+)
+        toolitem "Add symbols Application SW"   "+P,g"
+        (
+            Data.LOAD.Elf &app_elf_file /NOCODE
+        )
+        separator
+        toolitem "Select Bootloader Elf File"   ":load"
+        (
+            IF ("&bootloader_elf_file"=="")
+            (
+                &bootloader_elf_file=OS.PSD()+"\dummy.elf"
+            )
+            &bootloader_elf_searchpath=OS.FILE.PATH(&bootloader_elf_file)
+            IF ("&bootloader_elf_searchpath"=="")
+            (
+                &bootloader_elf_searchpath=OS.PPD()
+                PRINT "Bootloader .elf directory not found, use default"
+            )
+            DIALOG.File "&bootloader_elf_searchpath\*"
+            ENTRY %line &bootloader_elf_file
+            IF ("&bootloader_elf_file"=="")
+            (
+                PRINT "Bootloader .elf file not found"
+                ENDDO
+            )
+            IF (STRING.FIND("&bootloader_elf_file"," "))
+            (
+                PRINT %ERROR "Sorry: do not use filenames which contain spaces: '&bootloader_elf_file'!"
+                ENDDO
+            )
+            PRINT "selected file: &bootloader_elf_file"
+            ENDDO
+        )
+        toolitem "Program foxBMS Bootloader Elf File"   ":flash"
+        (
+            PRINT "Erasing Program Code: (&bootloader_elf_start)--(&bootloader_elf_end)"
+            wait 0.1s
+            FLASH.ReProgram (&bootloader_elf_start)--(&bootloader_elf_end)
+            Data.LOAD.Elf &bootloader_elf_file (&bootloader_elf_start)--(&bootloader_elf_end)
+            FLASH.ReProgram OFF
+            PRINT ".ELF file has been flashed"
+
+            ; Reset the target again
+            SYStem.Up
+            ENDDO
+
+        )
+        toolitem "Add symbols Bootloader SW"   "+P,r"
+        (
+            Data.LOAD.Elf &bootloader_elf_file /NOCODE
+        )
+        separator
+        toolitem "Reset all symbols"    "-P,i"      "SYMBOL.RESET"
+        separator
+        toolitem "Up and Go"            ":apugo"
+        (
+            ON ERROR GOSUB
+            RETURN
+            SYStem.UP
+            Screen
+            GO
+        )
+        toolitem "SYSTEM.UP"    "up,i"  "SYStem.UP"
+        toolitem "SYSTEM.DOWN"  "dn,i"  "SYStem.DOWN"
+    )
+
+
+    ;======================================================================
+    ;  Menu definition
+    ;======================================================================
+    add
+    menu
+    (
+        popup "&foxBMS"
+        (
+
+            menuitem "[:down]SYStem Down"   "SYStem.DOWN"
+            menuitem "[:up]SYStem UP"       "SYStem.UP"
+            menuitem "[:goc]Up and &Go"
+            (
+                ON ERROR GOSUB
+                RETURN
+                sYStem.UP
+                Screen
+                GO
+            )
+            separator
+            menuitem "Reinitialize Debugger Script"
+            (
+                do &init_file
+                ENDDO
+            )
+            separator
+            menuitem "Show Flash List"
+            (
+                Flash.List
+                ENDDO
+            )
+            menuitem "Show Source-Path"
+            (
+                symbol.sourcepath.list
+                ENDDO
+            )
+            menuitem "Add Source-Path"
+            (
+                symbol.sourcepath &source_path
+                ENDDO
+            )
+            menuitem "Load Source-Path"
+            (
+                do &working_path_all
+                ENDDO
+            )
+            menuitem "Save Source-Path"
+            (
+                store &working_path_all spathcache
+                ENDDO
+            )
+            separator
+            menuitem "[:view]Show PRACTICE macros"
+            (
+                pmacro.list
+                ENDDO
+            )
+            menuitem "[:view]Debug Scripts"
+            (
+                cd.pedit &init_file
+                ENDDO
+            )
+            separator
+            menuitem "Fill Memory"
+            (
+                AREA.Create FILL-AREA
+                AREA.Select FILL-AREA
+                WinPOS ,,,,,, FILL1
+                AREA.view FILL-AREA
+                ;Print "Please enter the Filename including the path (do not use spaces!)"
+                ;Print "File name="
+                ;ENTER &file_dump
+                PRINT "Please enter the address area to be filled (e.g., 0x40000000--0x40000100)"
+                PRINT "Address area="
+                ENTER &area_dump
+                PRINT " "
+                PRINT "Please enter the data to be written(e.g., 0x12345678)"
+                PRINT "value="
+                ENTER &value_data
+                PRINT " "
+                ;PRINTER.OPEN &file_dump
+                ;WINPRINT.DATA.DUMP &area_dump
+                (
+                D.S &area_dump %BE %LONG &value_data
+                )
+                ;PRINTER.CLOSE
+                AREA.RESet
+                WinCLEAR FILL1
+                ENDDO
+            )
+            POPUP "&Save Dump/List"
+            (
+                menuitem "Save Data.Dump"
+                (
+                    AREA.Create DUMP-AREA
+                    AREA.Select DUMP-AREA
+                    WinPOS ,,,,,, DUMP1
+                    AREA.view DUMP-AREA
+                    Print "Please enter the Filename including the path (do not use spaces!)"
+                    Print "File name="
+                    ENTER &file_dump
+                    PRINT "Please enter the address area (e.g., 0x20000000--0x20000100)"
+                    PRINT "Address area="
+                    ENTER &area_dump
+                    PRINT " "
+                    PRINTER.OPEN &file_dump
+                    WINPRINT.DATA.DUMP &area_dump
+                    PRINTER.CLOSE
+                    AREA.RESet
+                    WinCLEAR DUMP1
+                    ENDDO
+                )
+                menuitem "Save DATA.LIST"
+                (
+                    AREA.Create TRACE
+                    AREA.Select TRACE
+                    WinPOS ,,,,,, TRACE1
+                    AREA.view TRACE
+                    Print "Creating C-Source and Assembler-List. Please enter the Filename including the path (does not contain spaces!)"
+                    Print "File name="
+                    ENTER &file_trace
+                    PRINT "Please enter the area of the Source List (e.g., 0x20000--0x20100)"
+                    ;PRINT "Address area="
+                    PRINT "Record numbers="
+                    ENTER &area_dump
+                    PRINT " "
+                    PRINTER.OPEN &file_trace
+                    ;WINPRINT.A.LIST %LEN 60 &area_dump
+                    WINPRINT.DATA.LIST &area_dump
+                    PRINTER.CLOSE
+                    AREA.RESet
+                    WinCLEAR TRACE1
+                    ENDDO
+                )
+            )
+        )
+    )
+)
+
+; Add FreeRTOS awareness
+SYStem.Up
+TASK.CONFIG ~~/demo/arm/kernel/freertos/freertos.t32
+MENU.ReProgram ~~/demo/arm/kernel/freertos/freertos.men
+HELP.FILTER.Add rtosfreertos
+Data.LOAD.Elf &app_elf_file /NOCODE
+IF OS.FILE(&macro_values)
+    do &macro_values
+
+PRINT "Initialization successful, foxBMS ready"
+ENDDO

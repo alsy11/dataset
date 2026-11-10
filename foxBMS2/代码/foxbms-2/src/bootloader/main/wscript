@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2010 - 2026, Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V.
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# We kindly request you to use one or more of the following phrases to refer to
+# foxBMS in your hardware, software, documentation or advertising materials:
+#
+# - "This product uses parts of foxBMS®"
+# - "This product includes parts of foxBMS®"
+# - "This product is derived from foxBMS®"
+
+from waflib.Build import BuildContext
+
+
+def build(bld: BuildContext) -> None:
+    op = f"{bld.env.APPNAME.lower()}-object-"
+    lp = f"{bld.env.APPNAME.lower()}-"
+    target = f"{bld.env.APPNAME.lower()}-bootloader"
+
+    source = "fassert"
+    includes = [bld.path.find_node("include")]
+    bld.objects(
+        source=f"{source}.c",
+        includes=includes,
+        target=f"{op}{source}",
+    )
+    source = "fstartup"
+    use = f"{lp}hal"
+    bld.objects(
+        source=f"{source}.c",
+        includes=includes,
+        use=use,
+        target=f"{op}{source}",
+    )
+    source = "intvecs_init"
+    use = f"{lp}hal"
+    bld.objects(
+        features="asm",
+        source=f"{source}.asm",
+        includes=includes,
+        use=use,
+        target=f"{op}{source}",
+    )
+    source = "intvecs"
+    use = f"{lp}hal"
+    bld.objects(
+        features="asm",
+        source=f"{source}.asm",
+        includes=includes,
+        use=use,
+        target=f"{op}{source}",
+    )
+
+    use = [
+        f"{op}fassert",
+        f"{op}flash",
+        f"{op}flash_cfg",
+        f"{op}fstartup",
+        f"{op}intvecs_init",
+        f"{op}intvecs",
+        f"{lp}driver",
+        f"{lp}engine",
+        f"{lp}hal",
+        f"{lp}portable",
+        "rtsv7R4_A_be_v3D16_eabi",
+        "_L2FMC",
+        # F021_API_CortexR4_BE_L2FMC_V3D16 is used through the linker script
+    ]
+
+    # setup specifically whether the bootloader or the target tests shall be built
+    if bld.variant == "bootloader_unit_test_ti_arm_cgt":
+        bld.recurse([bld.srcnode.find_dir("tests/unit-hw").path_from(bld.path)])
+        return
+
+    includes = [
+        bld.path.find_node("include"),
+        bld.srcnode.find_node("src/bootloader/driver/can"),
+        bld.srcnode.find_node("src/bootloader/driver/config"),
+        bld.srcnode.find_node("src/bootloader/driver/crc"),
+        bld.srcnode.find_node("src/bootloader/driver/flash"),
+        bld.srcnode.find_node("src/bootloader/driver/foxmath"),
+        bld.srcnode.find_node("src/bootloader/driver/rti"),
+        bld.srcnode.find_node("src/bootloader/driver/rti"),
+        bld.srcnode.find_node("src/bootloader/engine/boot"),
+        bld.srcnode.find_node("src/bootloader/engine/can"),
+        bld.srcnode.find_node("src/bootloader/engine/config"),
+        bld.srcnode.find_node("src/version"),
+    ]
+
+    linker_script_elf = bld.path.find_node("bootloader.cmd")
+    source = "main"
+    bld(
+        features="c cprogram",
+        source=f"{source}.c",
+        includes=includes,
+        use=use,
+        linker_script=linker_script_elf,
+        version=True,
+        target=target,
+    )

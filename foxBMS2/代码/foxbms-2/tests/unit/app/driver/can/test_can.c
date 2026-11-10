@@ -1,0 +1,618 @@
+/**
+ *
+ * @copyright &copy; 2010 - 2026, Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V.
+ * All rights reserved.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * We kindly request you to use one or more of the following phrases to refer to
+ * foxBMS in your hardware, software, documentation or advertising materials:
+ *
+ * - "This product uses parts of foxBMS&reg;"
+ * - "This product includes parts of foxBMS&reg;"
+ * - "This product is derived from foxBMS&reg;"
+ *
+ */
+
+/**
+ * @file    test_can.c
+ * @author  foxBMS Team
+ * @date    2020-04-01 (date of creation)
+ * @updated 2026-10-06 (date of last update)
+ * @version v1.12.0
+ * @ingroup UNIT_TEST_IMPLEMENTATION
+ * @prefix  TEST
+ *
+ * @brief   Tests for the CAN driver
+ * @details This file implements the test of the validation functions for tx message
+ *          configuration with correct configuration for message period and phase.
+ *          Both functions are tested to not assert an error with valid configuration.
+ *          Invalid configurations are tested in test_can_1 and test_can_2.
+ */
+
+/*========== Includes =======================================================*/
+#include "unity.h"
+#include "MockHL_can.h"
+#include "MockHL_reg_het.h"
+#include "Mockcan_cfg.h"
+#include "Mockdatabase.h"
+#include "Mockdiag.h"
+#include "Mockfoxmath.h"
+#include "Mockftask.h"
+#include "Mockimd.h"
+#include "Mockio.h"
+#include "Mockmcu.h"
+#include "Mockos.h"
+#include "Mockpex.h"
+#include "Mockportmacro.h"
+#include "Mockqueue.h"
+#include "Mocktest_can_mpu_prototype_queue_create_stub.h"
+
+#include "pex_cfg.h"
+
+#include "can.h"
+#include "test_assert_helper.h"
+#include "version.h"
+
+#include <stdbool.h>
+#include <stdint.h>
+
+/*========== Unit Testing Framework Directives ==============================*/
+
+/*========== Definitions and Implementations for Unit Test ==================*/
+
+/* defines in can.c */
+/** ID shift for standard identifier */
+#define CAN_IF2ARB_STANDARD_IDENTIFIER_SHIFT (18u)
+/** ID shift for extended identifier */
+#define CAN_IF2ARB_EXTENDED_IDENTIFIER_SHIFT (0u)
+#define CAN_IF2ARB_SET_TX_DIRECTION          ((uint32)1u << 29u)
+/** IF2ARB use standard identifier */
+#define CAN_IF2ARB_USE_STANDARD_IDENTIFIER ((uint32)0u << 30u)
+/** IF2ARB use extended identifier */
+#define CAN_IF2ARB_USE_EXTENDED_IDENTIFIER ((uint32)1u << 30u)
+
+/* see src/app/driver/config/can_cfg_rx-message-definitions.h, but we omit
+   this include here */
+#define CANRX_NOT_PERIODIC (0u)
+
+/* TX test case */
+#define TEST_CANTX_ID_DUMMY        (0x001)
+#define TEST_CANTX_DUMMY_PERIOD_ms (100)
+#define TEST_CANTX_DUMMY_PHASE_ms  (0)
+
+#define TEST_CANTX_DUMMY_MESSAGE                                                 \
+    {                                                                            \
+        .id         = TEST_CANTX_ID_DUMMY,                                       \
+        .dlc        = CAN_DEFAULT_DLC,                                           \
+        .endianness = CAN_LITTLE_ENDIAN,                                         \
+        .idType     = CAN_STANDARD_IDENTIFIER_11_BIT,                            \
+    },                                                                           \
+    {                                                                            \
+        .period = TEST_CANTX_DUMMY_PERIOD_ms, .phase = TEST_CANTX_DUMMY_PHASE_ms \
+    }
+
+/* Rx test case*/
+#define TEST_CANRX_ID_DUMMY (0x002)
+
+#define TEST_CANRX_DUMMY_MESSAGE                      \
+    {                                                 \
+        .id         = TEST_CANRX_ID_DUMMY,            \
+        .dlc        = CAN_DEFAULT_DLC,                \
+        .endianness = CAN_LITTLE_ENDIAN,              \
+        .idType     = CAN_STANDARD_IDENTIFIER_11_BIT, \
+    },                                                \
+    {                                                 \
+        .period = CANRX_NOT_PERIODIC                  \
+    }
+
+const CAN_NODE_s can_node1 = {
+    .canNodeRegister = canREG1,
+};
+
+const CAN_NODE_s can_node2Isolated = {
+    .canNodeRegister = canREG2,
+};
+
+static DATA_BLOCK_CELL_TEMPERATURE_s can_tableTemperatures  = {.header.uniqueId = DATA_BLOCK_ID_CELL_TEMPERATURE};
+static DATA_BLOCK_CELL_VOLTAGE_s can_tableCellVoltages      = {.header.uniqueId = DATA_BLOCK_ID_CELL_VOLTAGE};
+static DATA_BLOCK_CURRENT_s can_tableCurrent                = {.header.uniqueId = DATA_BLOCK_ID_CURRENT};
+static DATA_BLOCK_CURRENT_COUNTER_s can_tableCurrentCounter = {.header.uniqueId = DATA_BLOCK_ID_CURRENT_COUNTER};
+static DATA_BLOCK_ENERGY_COUNTER_s can_tableEnergyCounter   = {.header.uniqueId = DATA_BLOCK_ID_ENERGY_COUNTER};
+static DATA_BLOCK_ERROR_STATE_s can_tableErrorState         = {.header.uniqueId = DATA_BLOCK_ID_ERROR_STATE};
+static DATA_BLOCK_INSULATION_s can_tableInsulation          = {.header.uniqueId = DATA_BLOCK_ID_INSULATION};
+static DATA_BLOCK_MIN_MAX_s can_tableMinimumMaximumValues   = {.header.uniqueId = DATA_BLOCK_ID_MIN_MAX};
+static DATA_BLOCK_MOL_FLAG_s can_tableMolFlags              = {.header.uniqueId = DATA_BLOCK_ID_MOL_FLAG};
+static DATA_BLOCK_MSL_FLAG_s can_tableMslFlags              = {.header.uniqueId = DATA_BLOCK_ID_MSL_FLAG};
+static DATA_BLOCK_OPEN_WIRE_s can_tableOpenWire             = {.header.uniqueId = DATA_BLOCK_ID_OPEN_WIRE_BASE};
+static DATA_BLOCK_PACK_VALUES_s can_tablePackValues         = {.header.uniqueId = DATA_BLOCK_ID_PACK_VALUES};
+static DATA_BLOCK_RSL_FLAG_s can_tableRslFlags              = {.header.uniqueId = DATA_BLOCK_ID_RSL_FLAG};
+static DATA_BLOCK_SOC_s can_tableSoc                        = {.header.uniqueId = DATA_BLOCK_ID_SOC};
+static DATA_BLOCK_SOE_s can_tableSoe                        = {.header.uniqueId = DATA_BLOCK_ID_SOE};
+static DATA_BLOCK_SOH_s can_tableSoh                        = {.header.uniqueId = DATA_BLOCK_ID_SOH};
+static DATA_BLOCK_STATE_REQUEST_s can_tableStateRequest     = {.header.uniqueId = DATA_BLOCK_ID_STATE_REQUEST};
+
+OS_QUEUE imd_canDataQueue = NULL_PTR;
+
+const CAN_SHIM_s can_kShim = {
+    .pQueueImd             = &ftsk_imdCanDataQueue,
+    .pTableCellTemperature = &can_tableTemperatures,
+    .pTableCellVoltage     = &can_tableCellVoltages,
+    .pTableCurrent         = &can_tableCurrent,
+    .pTableCurrentCounter  = &can_tableCurrentCounter,
+    .pTableEnergyCounter   = &can_tableEnergyCounter,
+    .pTableErrorState      = &can_tableErrorState,
+    .pTableInsulation      = &can_tableInsulation,
+    .pTableMinMax          = &can_tableMinimumMaximumValues,
+    .pTableMol             = &can_tableMolFlags,
+    .pTableMsl             = &can_tableMslFlags,
+    .pTableOpenWire        = &can_tableOpenWire,
+    .pTablePackValues      = &can_tablePackValues,
+    .pTableRsl             = &can_tableRslFlags,
+    .pTableSoc             = &can_tableSoc,
+    .pTableSoe             = &can_tableSoe,
+    .pTableSof             = NULL_PTR,
+    .pTableSoh             = &can_tableSoh,
+    .pTableStateRequest    = &can_tableStateRequest,
+};
+
+static uint32_t TEST_CANTX_DummyCallback(
+    CAN_MESSAGE_PROPERTIES_s message,
+    uint8_t *pCanData,
+    uint8_t *pMuxId,
+    const CAN_SHIM_s *const kpkCanShim) {
+    (void)message;
+    (void)pCanData;
+    (void)pMuxId;
+    (void)kpkCanShim;
+    return 0;
+}
+
+static uint32_t TEST_CANRX_DummyCallback(
+    CAN_MESSAGE_PROPERTIES_s message,
+    const uint8_t *const kpkCanData,
+    const CAN_SHIM_s *const kpkCanShim) {
+    (void)message;
+    (void)kpkCanData;
+    (void)kpkCanShim;
+    return 0;
+}
+
+const CAN_TX_MESSAGE_TYPE_s can_txMessages[] = {
+    {CAN_NODE_1, TEST_CANTX_DUMMY_MESSAGE, &TEST_CANTX_DummyCallback, NULL_PTR},
+};
+
+const CAN_RX_MESSAGE_TYPE_s can_rxMessages[] = {
+    {CAN_NODE_1, TEST_CANRX_DUMMY_MESSAGE, &TEST_CANRX_DummyCallback},
+};
+
+const uint8_t can_txMessagesLength = sizeof(can_txMessages) / sizeof(can_txMessages[0]);
+const uint8_t can_rxMessagesLength = sizeof(can_rxMessages) / sizeof(can_rxMessages[0]);
+
+CAN_BUFFER_ELEMENT_s dummyMessageBuffer = {
+    .canNode = CAN_NODE_1,
+    .id      = TEST_CANTX_ID_DUMMY,
+    .idType  = CAN_STANDARD_IDENTIFIER_11_BIT,
+    .data    = {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u}};
+
+const uint16_t numberOfRepetitionsToReset = (TEST_CANTX_DUMMY_PERIOD_ms / CAN_TICK_ms) - 1;
+
+CAN_STATE_s *canTestState = NULL_PTR;
+
+OS_QUEUE ftsk_dataQueue                = NULL_PTR;
+OS_QUEUE ftsk_imdCanDataQueue          = NULL_PTR;
+OS_QUEUE ftsk_canRxQueue               = NULL_PTR;
+OS_QUEUE ftsk_canTxUnsentMessagesQueue = NULL_PTR;
+volatile bool ftsk_allQueuesCreated    = false;
+
+/*========== Setup and Teardown =============================================*/
+void setUp(void) {
+    canTestState = TEST_CAN_GetCANState();
+
+    canTestState->periodicEnable = false;
+
+    for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
+        canTestState->currentSensorPresent[s]   = false;
+        canTestState->currentSensorCCPresent[s] = false;
+    }
+}
+
+void tearDown(void) {
+}
+
+/*========== Test Cases =====================================================*/
+void testDataSendNullPointerAsNode(void) {
+    uint8_t data = 0;
+    TEST_ASSERT_FAIL_ASSERT(CAN_DataSend(NULL_PTR, 0u, CAN_STANDARD_IDENTIFIER_11_BIT, &data));
+}
+
+void testDataSendNullPointerAsData(void) {
+    CAN_NODE_s node = {0};
+    TEST_ASSERT_FAIL_ASSERT(CAN_DataSend(&node, 0u, CAN_STANDARD_IDENTIFIER_11_BIT, NULL_PTR));
+}
+
+void testDataSendNoMessagePending(void) {
+    CAN_NODE_s *pNode = CAN_NODE_2;
+    uint8_t data      = 0;
+
+    for (uint8_t messages = 0u; messages < 8u; messages++) {
+        for (uint8_t messageBox = 1u; messageBox <= CAN_NR_OF_TX_MESSAGE_BOX; messageBox++) {
+            vPortDisableInterrupts_Expect();
+            canIsTxMessagePending_ExpectAndReturn(pNode->canNodeRegister, messageBox, 1u);
+            vPortEnableInterrupts_Expect();
+        }
+    }
+
+    for (uint8_t i = 0u; i < 16; i += 2) {
+        TEST_ASSERT_EQUAL(STD_NOT_OK, CAN_DataSend(pNode, i, CAN_STANDARD_IDENTIFIER_11_BIT, &data));
+    }
+}
+
+void testDataSendInvalidIdentifierType(void) {
+    CAN_NODE_s *pNode                    = CAN_NODE_1;
+    uint8_t data                         = 0;
+    CAN_IDENTIFIER_TYPE_e identifierType = CAN_INVALID_TYPE;
+
+    TEST_ASSERT_FAIL_ASSERT(CAN_DataSend(pNode, TEST_CANTX_ID_DUMMY, identifierType, &data));
+}
+
+void testDataSendMessagePending(void) {
+    CAN_NODE_s *pNode = CAN_NODE_1;
+    uint8_t data      = 0;
+
+    /* simulate first messageBox has pending message */
+    vPortDisableInterrupts_Expect();
+    canIsTxMessagePending_ExpectAndReturn(pNode->canNodeRegister, 1, 0u);
+    canUpdateID_Expect(pNode->canNodeRegister, 1, 0x20040000u);
+    canTransmit_ExpectAndReturn(pNode->canNodeRegister, 1, &data, 0u);
+    vPortEnableInterrupts_Expect();
+    TEST_ASSERT_EQUAL(STD_OK, CAN_DataSend(pNode, 0x001, CAN_STANDARD_IDENTIFIER_11_BIT, &data));
+
+    /* simulate messageBox until the highest to have no pending messages */
+    for (uint8_t messageBox = 1u; messageBox < (CAN_NR_OF_TX_MESSAGE_BOX - 1); messageBox++) {
+        vPortDisableInterrupts_Expect();
+        canIsTxMessagePending_ExpectAndReturn(pNode->canNodeRegister, messageBox, 1u);
+        vPortEnableInterrupts_Expect();
+    }
+    /* last message box has message pending */
+    vPortDisableInterrupts_Expect();
+    canIsTxMessagePending_ExpectAndReturn(pNode->canNodeRegister, CAN_NR_OF_TX_MESSAGE_BOX - 1, 0u);
+    canUpdateID_Expect(pNode->canNodeRegister, CAN_NR_OF_TX_MESSAGE_BOX - 1, 0x20040000u);
+    canTransmit_ExpectAndReturn(pNode->canNodeRegister, CAN_NR_OF_TX_MESSAGE_BOX - 1, &data, 0u);
+    vPortEnableInterrupts_Expect();
+    TEST_ASSERT_EQUAL(STD_OK, CAN_DataSend(pNode, 0x001, CAN_STANDARD_IDENTIFIER_11_BIT, &data));
+}
+
+void testEnablePeriodic(void) {
+    /* check state before */
+    TEST_ASSERT_EQUAL(false, canTestState->periodicEnable);
+
+    CAN_EnablePeriodic(false);
+    TEST_ASSERT_EQUAL(false, canTestState->periodicEnable);
+
+    CAN_EnablePeriodic(true);
+    TEST_ASSERT_EQUAL(true, canTestState->periodicEnable);
+}
+
+void testIsCurrentSensorPresent(void) {
+    for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
+        /* check state before */
+        TEST_ASSERT_EQUAL(false, canTestState->currentSensorPresent[s]);
+
+        TEST_ASSERT_EQUAL(false, CAN_IsCurrentSensorPresent(s));
+
+        /* set state to true */
+        canTestState->currentSensorPresent[s] = true;
+
+        /* check state again */
+        TEST_ASSERT_EQUAL(true, canTestState->currentSensorPresent[s]);
+    }
+}
+
+void testIsCurrentSensorCcPresent(void) {
+    for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
+        /* check state before */
+        TEST_ASSERT_EQUAL(false, canTestState->currentSensorCCPresent[s]);
+        TEST_ASSERT_EQUAL(false, CAN_IsCurrentSensorCcPresent(s));
+
+        /* set state to true */
+        canTestState->currentSensorCCPresent[s] = true;
+
+        /* check state again */
+        TEST_ASSERT_EQUAL(true, canTestState->currentSensorCCPresent[s]);
+    }
+}
+
+void testCAN_ValidateConfiguredTxMessagePeriod(void) {
+    TEST_ASSERT_PASS_ASSERT(TEST_CAN_ValidateConfiguredTxMessagePeriod());
+}
+
+void testCAN_ValidateConfiguredTxMessagePhase(void) {
+    TEST_ASSERT_PASS_ASSERT(TEST_CAN_ValidateConfiguredTxMessagePhase());
+}
+
+void testCAN_CheckDatabaseNullPointer(void) {
+    const CAN_SHIM_s can_shim_corrupted = {
+        /* corrupted struct example */
+
+        .pTableCellTemperature = &can_tableTemperatures,
+        .pTableCellVoltage     = &can_tableCellVoltages,
+        .pTableCurrent         = &can_tableCurrent,
+        .pTableCurrentCounter  = &can_tableCurrentCounter,
+        .pTableEnergyCounter   = &can_tableEnergyCounter,
+        .pTableErrorState      = &can_tableErrorState,
+        .pTableInsulation      = &can_tableInsulation,
+        .pTableMinMax          = &can_tableMinimumMaximumValues,
+        .pTableMol             = &can_tableMolFlags,
+        .pTableMsl             = &can_tableMslFlags,
+        .pTableOpenWire        = &can_tableOpenWire,
+        .pTablePackValues      = &can_tablePackValues,
+        .pTableRsl             = &can_tableRslFlags,
+        .pTableSoc             = &can_tableSoc,
+        .pTableSoe             = &can_tableSoe,
+        .pTableSof             = NULL_PTR,
+        .pTableSoh             = &can_tableSoh,
+        .pTableStateRequest    = &can_tableStateRequest,
+    };
+
+    TEST_ASSERT_FAIL_ASSERT(TEST_CAN_CheckDatabaseNullPointer(can_shim_corrupted));
+}
+
+void testCAN_PeriodicTransmitQueueFull(void) {
+    CAN_BUFFER_ELEMENT_s message = {NULL_PTR, 0u, CAN_INVALID_TYPE, {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u}};
+
+    OS_ReceiveFromQueue_ExpectAndReturn(ftsk_canTxUnsentMessagesQueue, (void *)&message, 0u, OS_FAIL);
+
+    /* assume all message boxes are full */
+    for (uint8_t messageBox = 1u; messageBox <= CAN_NR_OF_TX_MESSAGE_BOX; messageBox++) {
+        vPortDisableInterrupts_Expect();
+        canIsTxMessagePending_ExpectAndReturn(can_node1.canNodeRegister, messageBox, 1u);
+        vPortEnableInterrupts_Expect();
+    }
+
+    /* expect a message to be sent to queue */
+    OS_SendToBackOfQueue_ExpectAndReturn(ftsk_canTxUnsentMessagesQueue, (void *)&dummyMessageBuffer, 0u, OS_FAIL);
+    /* sending to queue failed, expect error sent to diag */
+    DIAG_Handler_ExpectAndReturn(DIAG_ID_CAN_TX_QUEUE_FULL, DIAG_EVENT_NOT_OK, DIAG_SYSTEM, 0u, DIAG_HANDLER_RETURN_OK);
+    /* Assume no messages in queue */
+    for (uint16_t i = 0; i < numberOfRepetitionsToReset; i++) {
+        OS_ReceiveFromQueue_ExpectAndReturn(ftsk_canTxUnsentMessagesQueue, (void *)&message, 0u, OS_FAIL);
+    }
+
+    /* test call */
+    TEST_CAN_PeriodicTransmit();
+
+    /* call repeatedly until phase is zero again */
+    for (uint16_t i = 0; i < numberOfRepetitionsToReset; i++) {
+        TEST_CAN_PeriodicTransmit();
+    }
+}
+
+void testCAN_PeriodicTransmitQueueHasSpace(void) {
+    /* Assume no messages in queue */
+    CAN_BUFFER_ELEMENT_s message = {NULL_PTR, 0u, CAN_INVALID_TYPE, {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u}};
+    OS_ReceiveFromQueue_ExpectAndReturn(ftsk_canTxUnsentMessagesQueue, (void *)&message, 0u, OS_FAIL);
+
+    /* assume all message boxes are full */
+    for (uint8_t messageBox = 1u; messageBox <= CAN_NR_OF_TX_MESSAGE_BOX; messageBox++) {
+        vPortDisableInterrupts_Expect();
+        canIsTxMessagePending_ExpectAndReturn(dummyMessageBuffer.canNode->canNodeRegister, messageBox, 1u);
+        vPortEnableInterrupts_Expect();
+    }
+
+    /* expect a message to be sent to queue */
+    OS_SendToBackOfQueue_ExpectAndReturn(ftsk_canTxUnsentMessagesQueue, (void *)&dummyMessageBuffer, 0u, OS_SUCCESS);
+    /* sending to queue successful, expect no error */
+    DIAG_Handler_ExpectAndReturn(DIAG_ID_CAN_TX_QUEUE_FULL, DIAG_EVENT_OK, DIAG_SYSTEM, 0u, DIAG_HANDLER_RETURN_OK);
+
+    /* test call */
+    TEST_CAN_PeriodicTransmit();
+
+    /* call repeatedly until phase is zero again */
+    for (uint16_t i = 0; i < numberOfRepetitionsToReset; i++) {
+        OS_ReceiveFromQueue_ExpectAndReturn(ftsk_canTxUnsentMessagesQueue, (void *)&message, 0u, OS_FAIL);
+        TEST_CAN_PeriodicTransmit();
+    }
+}
+
+void testCAN_IsMessagePeriodElapsed(void) {
+    /* Invalid messageIndex */
+    TEST_ASSERT_FAIL_ASSERT(TEST_CAN_IsMessagePeriodElapsed(0u, UINT16_MAX));
+
+    /* test case period not elapsed */
+    TEST_ASSERT_EQUAL(false, TEST_CAN_IsMessagePeriodElapsed(1u, 0u));
+
+    /* test case period elapsed */
+    TEST_ASSERT_EQUAL(true, TEST_CAN_IsMessagePeriodElapsed(0u, 0u));
+}
+
+void testCAN_CheckCanTiming(void) {
+    /* Test case: OK, skip CS timing check */
+    DATA_BLOCK_STATE_REQUEST_s stateRequestTest = {.header.uniqueId = DATA_BLOCK_ID_STATE_REQUEST};
+    stateRequestTest.header.timestamp           = 100u;
+    stateRequestTest.header.previousTimestamp   = 0u;
+
+    OS_GetTickCount_ExpectAndReturn(100u);
+    DATA_Read2DataBlocks_ExpectAndReturn(&can_tableStateRequest, &can_tableErrorState, STD_OK);
+    DATA_Read2DataBlocks_ReturnThruPtr_pDataToReceiver0(&stateRequestTest);
+
+    DIAG_Handler_ExpectAndReturn(DIAG_ID_CAN_TIMING, DIAG_EVENT_OK, DIAG_SYSTEM, 0u, DIAG_HANDLER_RETURN_OK);
+
+    OS_GetTickCount_ExpectAndReturn(0u);
+    DATA_Read3DataBlocks_ExpectAndReturn(&can_tableCurrent, &can_tableCurrentCounter, &can_tableEnergyCounter, STD_OK);
+
+    TEST_CAN_CheckCanTiming();
+
+    /* Test case: NOT OK, skip CS timing check */
+    stateRequestTest.header.timestamp         = 0u;
+    stateRequestTest.header.previousTimestamp = 0u;
+    OS_GetTickCount_ExpectAndReturn(0u);
+    DATA_Read2DataBlocks_ExpectAndReturn(&can_tableStateRequest, &can_tableErrorState, STD_OK);
+    DIAG_Handler_ExpectAndReturn(DIAG_ID_CAN_TIMING, DIAG_EVENT_NOT_OK, DIAG_SYSTEM, 0u, DIAG_HANDLER_RETURN_OK);
+
+    OS_GetTickCount_ExpectAndReturn(0u);
+    DATA_Read3DataBlocks_ExpectAndReturn(&can_tableCurrent, &can_tableCurrentCounter, &can_tableEnergyCounter, STD_OK);
+
+    TEST_CAN_CheckCanTiming();
+
+    /* Test case: Else path, skip CS timing check */
+    stateRequestTest.header.timestamp         = 100u;
+    stateRequestTest.header.previousTimestamp = 0u;
+
+    OS_GetTickCount_ExpectAndReturn(0u);
+    DATA_Read2DataBlocks_ExpectAndReturn(&can_tableStateRequest, &can_tableErrorState, STD_OK);
+    DATA_Read2DataBlocks_ReturnThruPtr_pDataToReceiver0(&stateRequestTest);
+
+    DIAG_Handler_ExpectAndReturn(DIAG_ID_CAN_TIMING, DIAG_EVENT_NOT_OK, DIAG_SYSTEM, 0u, DIAG_HANDLER_RETURN_OK);
+
+    OS_GetTickCount_ExpectAndReturn(0u);
+    DATA_Read3DataBlocks_ExpectAndReturn(&can_tableCurrent, &can_tableCurrentCounter, &can_tableEnergyCounter, STD_OK);
+
+    TEST_CAN_CheckCanTiming();
+}
+
+void testCAN_CheckCanTimingOfCurrentSensor(void) {
+    /* Test case: no check */
+    OS_GetTickCount_ExpectAndReturn(0u);
+    DATA_Read3DataBlocks_ExpectAndReturn(&can_tableCurrent, &can_tableCurrentCounter, &can_tableEnergyCounter, STD_OK);
+    TEST_CAN_CheckCanTimingOfCurrentSensor();
+
+    /*Test case: CS measurements timeout */
+    static DATA_BLOCK_CURRENT_s currentTest                = {.header.uniqueId = DATA_BLOCK_ID_CURRENT};
+    static DATA_BLOCK_CURRENT_COUNTER_s currentCounterTest = {.header.uniqueId = DATA_BLOCK_ID_CURRENT_COUNTER};
+    static DATA_BLOCK_ENERGY_COUNTER_s energyCounterTest   = {.header.uniqueId = DATA_BLOCK_ID_ENERGY_COUNTER};
+    for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
+        currentTest.timestamp[s]        = BS_CURRENT_MEASUREMENT_RESPONSE_TIMEOUT_ms + 1u;
+        currentCounterTest.timestamp[s] = BS_COULOMB_COUNTING_MEASUREMENT_RESPONSE_TIMEOUT_ms + 1u;
+        energyCounterTest.timestamp[s]  = BS_ENERGY_COUNTING_MEASUREMENT_RESPONSE_TIMEOUT_ms + 1u;
+    }
+    OS_GetTickCount_ExpectAndReturn(0u);
+    DATA_Read3DataBlocks_ExpectAndReturn(&can_tableCurrent, &can_tableCurrentCounter, &can_tableEnergyCounter, STD_OK);
+    DATA_Read3DataBlocks_ReturnThruPtr_pDataToReceiver0(&currentTest);
+    DATA_Read3DataBlocks_ReturnThruPtr_pDataToReceiver1(&currentCounterTest);
+    DATA_Read3DataBlocks_ReturnThruPtr_pDataToReceiver2(&energyCounterTest);
+    for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
+        DIAG_Handler_ExpectAndReturn(
+            DIAG_ID_CURRENT_SENSOR_RESPONDING, DIAG_EVENT_NOT_OK, DIAG_STRING, s, DIAG_HANDLER_RETURN_OK);
+        DIAG_Handler_ExpectAndReturn(
+            DIAG_ID_CURRENT_SENSOR_CC_RESPONDING, DIAG_EVENT_NOT_OK, DIAG_STRING, s, DIAG_HANDLER_RETURN_OK);
+        DIAG_Handler_ExpectAndReturn(
+            DIAG_ID_CURRENT_SENSOR_EC_RESPONDING, DIAG_EVENT_NOT_OK, DIAG_STRING, s, DIAG_HANDLER_RETURN_OK);
+    }
+
+    TEST_CAN_CheckCanTimingOfCurrentSensor();
+
+    /*Test case: CS measurements valid timing, set as present */
+    for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
+        currentTest.timestamp[s]        = 1u;
+        currentCounterTest.timestamp[s] = 1u;
+        energyCounterTest.timestamp[s]  = 1u;
+    }
+    OS_GetTickCount_ExpectAndReturn(100u);
+    DATA_Read3DataBlocks_ExpectAndReturn(&can_tableCurrent, &can_tableCurrentCounter, &can_tableEnergyCounter, STD_OK);
+    DATA_Read3DataBlocks_ReturnThruPtr_pDataToReceiver0(&currentTest);
+    DATA_Read3DataBlocks_ReturnThruPtr_pDataToReceiver1(&currentCounterTest);
+    DATA_Read3DataBlocks_ReturnThruPtr_pDataToReceiver2(&energyCounterTest);
+    for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
+        DIAG_Handler_ExpectAndReturn(
+            DIAG_ID_CURRENT_SENSOR_RESPONDING, DIAG_EVENT_OK, DIAG_STRING, s, DIAG_HANDLER_RETURN_OK);
+        OS_EnterTaskCritical_Expect();
+        OS_ExitTaskCritical_Expect();
+        DIAG_Handler_ExpectAndReturn(
+            DIAG_ID_CURRENT_SENSOR_CC_RESPONDING, DIAG_EVENT_OK, DIAG_STRING, s, DIAG_HANDLER_RETURN_OK);
+        OS_EnterTaskCritical_Expect();
+        OS_ExitTaskCritical_Expect();
+        DIAG_Handler_ExpectAndReturn(
+            DIAG_ID_CURRENT_SENSOR_EC_RESPONDING, DIAG_EVENT_OK, DIAG_STRING, s, DIAG_HANDLER_RETURN_OK);
+        OS_EnterTaskCritical_Expect();
+        OS_ExitTaskCritical_Expect();
+    }
+
+    TEST_CAN_CheckCanTimingOfCurrentSensor();
+}
+
+void testCAN_SetCurrentSensorPresent(void) {
+    /* Test: set present as true */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    TEST_CAN_SetCurrentSensorPresent(true, 0u);
+
+    /* Test: set present as false */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    TEST_CAN_SetCurrentSensorPresent(false, 0u);
+}
+
+void testCAN_SetCurrentSensorCcPresent(void) {
+    /* Test: set present as true */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    TEST_CAN_SetCurrentSensorCcPresent(true, 0u);
+
+    /* Test: set present as false */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    TEST_CAN_SetCurrentSensorCcPresent(false, 0u);
+}
+
+void testCAN_SetCurrentSensorEcPresent(void) {
+    /* Test: set present as true */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    TEST_CAN_SetCurrentSensorEcPresent(true, 0u);
+
+    /* Test: set present as false */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    TEST_CAN_SetCurrentSensorEcPresent(false, 0u);
+}
+
+void testCAN_SendMessagesFromQueue(void) {
+    CAN_BUFFER_ELEMENT_s dummyMessageBufferEmpty = {
+        .canNode = NULL_PTR, .id = 0u, .idType = CAN_INVALID_TYPE, .data = {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u}};
+
+    /** only test the case of failing, because the case of successful call would
+     * require actual (not mocked) call of OS_ReceiveFromQueue to write to message buffer */
+    OS_ReceiveFromQueue_ExpectAndReturn(ftsk_canTxUnsentMessagesQueue, (void *)&dummyMessageBufferEmpty, 0u, OS_FAIL);
+
+    /* test call */
+    TEST_ASSERT_PASS_ASSERT(CAN_SendMessagesFromQueue());
+}
+
+void testCAN_InitializeTransceiver(void) {
+    IO_SetPinDirectionToOutput_Expect(&CAN_CAN1_IO_REG_DIR, CAN_CAN1_ENABLE_PIN);
+    IO_SetPinDirectionToOutput_Expect(&CAN_CAN1_IO_REG_DIR, CAN_CAN1_STANDBY_PIN);
+    IO_PinSet_Expect(&CAN_CAN1_IO_REG_DOUT, CAN_CAN1_ENABLE_PIN);
+    IO_PinSet_Expect(&CAN_CAN1_IO_REG_DOUT, CAN_CAN1_STANDBY_PIN);
+
+    PEX_SetPinDirectionOutput_Expect(PEX_PORT_EXPANDER2, CAN_CAN2_ENABLE_PIN);
+    PEX_SetPinDirectionOutput_Expect(PEX_PORT_EXPANDER2, CAN_CAN2_STANDBY_PIN);
+    PEX_SetPin_Expect(PEX_PORT_EXPANDER2, CAN_CAN2_ENABLE_PIN);
+    PEX_SetPin_Expect(PEX_PORT_EXPANDER2, CAN_CAN2_STANDBY_PIN);
+    TEST_CAN_InitializeTransceiver();
+}

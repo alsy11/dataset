@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{29b27da9-21f8-4b37-98b1-66b7cdedb3e3}</ProjectGuid>
+    <RootNamespace>SAMCodeSynthesis</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>JetCtrlSend\Implement;UartInit\Implement;B_TcProcess\Implement;CalculateGyroDg\Implement;CalculateGyroRs\Implement;CheckCal\Implement;CheckCal08\Implement;CheckCal16\Implement;Delay\Implement;GyroAttiDetermine\Implement;DSSDataGet\Implement;FaultJudgeProceed\Implement;GetUartData\Implement;GyroChoose\Implement;GyroPick\Implement;GyroStateGet\Implement;InitVar\Implement;JetDataGet\Implement;LimitControllerInput\Implement;LimitCtrlAngleInput\Implement;LimitCtrlRateInput\Implement;NoctrlJudge\Implement;PseudoRate\Implement;SAMSubModeCruise\Implement;SAMSubModeDamp\Implement;SAMSubModePitch\Implement;SAMSubModeRoll\Implement;SendUartData\Implement;SoftFaultJudgeSP\Implement;ThreeAxisController\Implement;ThrusterCtrlLogic\Implement;TMProcess\Implement;TcDataCheck\Implement;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="B_TcProcess\Implement\B_TcProcess.c" />
+    <ClCompile Include="CalculateGyroDg\Implement\CalculateGyroDg.c" />
+    <ClCompile Include="CalculateGyroRs\Implement\CalculateGyroRs.c" />
+    <ClCompile Include="CheckCal08\Implement\CheckCal08.c" />
+    <ClCompile Include="CheckCal16\Implement\CheckCal16.c" />
+    <ClCompile Include="CheckCal\Implement\CheckCal.c" />
+    <ClCompile Include="Delay\Implement\Delay.c" />
+    <ClCompile Include="DSSDataGet\Implement\DSSDataGet.c" />
+    <ClCompile Include="FaultJudgeProceed\Implement\FaultJudgeProceed.c" />
+    <ClCompile Include="GetUartData\Implement\GetUartData.c" />
+    <ClCompile Include="GyroAttiDetermine\Implement\GyroAttiDetermine.c" />
+    <ClCompile Include="GyroChoose\Implement\GyroChoose.c" />
+    <ClCompile Include="GyroPick\Implement\GyroPick.c" />
+    <ClCompile Include="GyroStateGet\Implement\GyroStateGet.c" />
+    <ClCompile Include="InitVar\Implement\InitVar.c" />
+    <ClCompile Include="JetCtrlSend\Implement\JetCtrlSend.c" />
+    <ClCompile Include="JetDataGet\Implement\JetDataGet.c" />
+    <ClCompile Include="LimitControllerInput\Implement\LimitControllerInput.c" />
+    <ClCompile Include="LimitCtrlAngleInput\Implement\LimitCtrlAngleInput.c" />
+    <ClCompile Include="LimitCtrlRateInput\Implement\LimitCtrlRateInput.c" />
+    <ClCompile Include="NoctrlJudge\Implement\NoctrlJudge.c" />
+    <ClCompile Include="PseudoRate\Implement\PseudoRate.c" />
+    <ClCompile Include="SAM.c" />
+    <ClCompile Include="SAMSubModeCruise\Implement\SAMSubModeCruise.c" />
+    <ClCompile Include="SAMSubModeDamp\Implement\SAMSubModeDamp.c" />
+    <ClCompile Include="SAMSubModePitch\Implement\SAMSubModePitch.c" />
+    <ClCompile Include="SAMSubModeRoll\Implement\SAMSubModeRoll.c" />
+    <ClCompile Include="SendUartData\Implement\SendUartData.c" />
+    <ClCompile Include="SoftFaultJudgeSP\Implement\SoftFaultJudgeSP.c" />
+    <ClCompile Include="std_utils.c" />
+    <ClCompile Include="TcDataCheck\Implement\TcDataCheck.c" />
+    <ClCompile Include="ThreeAxisController\Implement\ThreeAxisController.c" />
+    <ClCompile Include="ThrusterCtrlLogic\Implement\ThrusterCtrlLogic.c" />
+    <ClCompile Include="TMProcess\Implement\TMProcess.c" />
+    <ClCompile Include="UartInit\Implement\UartInit.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="B_TcProcess\Implement\B_TcProcess.h" />
+    <ClInclude Include="CalculateGyroDg\Implement\CalculateGyroDg.h" />
+    <ClInclude Include="CalculateGyroRs\Implement\CalculateGyroRs.h" />
+    <ClInclude Include="CheckCal08\Implement\CheckCal08.h" />
+    <ClInclude Include="CheckCal16\Implement\CheckCal16.h" />
+    <ClInclude Include="CheckCal\Implement\CheckCal.h" />
+    <ClInclude Include="Delay\Implement\Delay.h" />
+    <ClInclude Include="DSSDataGet\Implement\DSSDataGet.h" />
+    <ClInclude Include="FaultJudgeProceed\Implement\FaultJudgeProceed.h" />
+    <ClInclude Include="GetUartData\Implement\GetUartData.h" />
+    <ClInclude Include="GyroAttiDetermine\Implement\GyroAttiDetermine.h" />
+    <ClInclude Include="GyroChoose\Implement\GyroChoose.h" />
+    <ClInclude Include="GyroPick\Implement\GyroPick.h" />
+    <ClInclude Include="GyroStateGet\Implement\GyroStateGet.h" />
+    <ClInclude Include="InitVar\Implement\InitVar.h" />
+    <ClInclude Include="IP.h" />
+    <ClInclude Include="JetCtrlSend\Implement\JetCtrlSend.h" />
+    <ClInclude Include="JetDataGet\Implement\JetDataGet.h" />
+    <ClInclude Include="LimitControllerInput\Implement\LimitControllerInput.h" />
+    <ClInclude Include="LimitCtrlAngleInput\Implement\LimitCtrlAngleInput.h" />
+    <ClInclude Include="LimitCtrlRateInput\Implement\LimitCtrlRateInput.h" />
+    <ClInclude Include="NoctrlJudge\Implement\NoctrlJudge.h" />
+    <ClInclude Include="PseudoRate\Implement\PseudoRate.h" />
+    <ClInclude Include="SAM.h" />
+    <ClInclude Include="SAMSubModeCruise\Implement\SAMSubModeCruise.h" />
+    <ClInclude Include="SAMSubModeDamp\Implement\SAMSubModeDamp.h" />
+    <ClInclude Include="SAMSubModePitch\Implement\SAMSubModePitch.h" />
+    <ClInclude Include="SAMSubModeRoll\Implement\SAMSubModeRoll.h" />
+    <ClInclude Include="SendUartData\Implement\SendUartData.h" />
+    <ClInclude Include="SoftFaultJudgeSP\Implement\SoftFaultJudgeSP.h" />
+    <ClInclude Include="std_basal.h" />
+    <ClInclude Include="std_utils.h" />
+    <ClInclude Include="TcDataCheck\Implement\TcDataCheck.h" />
+    <ClInclude Include="ThreeAxisController\Implement\ThreeAxisController.h" />
+    <ClInclude Include="ThrusterCtrlLogic\Implement\ThrusterCtrlLogic.h" />
+    <ClInclude Include="TMProcess\Implement\TMProcess.h" />
+    <ClInclude Include="UartInit\Implement\UartInit.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitignore" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

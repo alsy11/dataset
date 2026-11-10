@@ -1,0 +1,63 @@
+.. include:: ./../../../macros.txt
+.. include:: ./../../../units.txt
+
+
+.. |local_bms_master_version| replace:: ``v1.2.2``
+.. |local_bms_master_identifier_short| replace:: |ti-tms570|-based |bms-master|
+.. |local_bms_master_identifier_full| replace:: |local_bms_master_identifier_short| |local_bms_master_version|
+
+.. _TI_TMS570_BASED_BMS_MASTER_V1_2_2:
+
+|local_bms_master_identifier_full|
+==================================
+
+.. note::
+
+   The changelog for this release is found at
+   :numref:`CHANGELOG_FOR_THE_TI_TMS570_BASED_BMS_MASTER_V1_2_2`.
+
+.. toctree::
+    :maxdepth: 1
+
+    ./ti-tms570lc4357-v1.2.2/ti-tms570lc4357-v1.2.2_block_diagram.rst
+    ./ti-tms570lc4357-v1.2.2/ti-tms570lc4357-v1.2.2_functional_description.rst
+    ./ti-tms570lc4357-v1.2.2/ti-tms570lc4357-v1.2.2_pinout.rst
+
+The following specifications must be met to ensure a safe and optimal work with
+the |bms-master| hardware.
+
+^^^^^^^^^^^^^^^^^^
+Electrical Ratings
+^^^^^^^^^^^^^^^^^^
+
+==================================================  =======     =======     =======     ====
+Description                                         Minimum     Typical     Maximum     Unit
+==================================================  =======     =======     =======     ====
+Supply Voltage Clamp 30 (VSUP_30)                   9           12          36          V DC
+Supply Voltage Clamp 30C (VSUP_30C)                 9           12          36          V DC
+Contactor Continuous Current                        --          --          1.8         A
+Contactor Feedback Supply Voltage                   --          VSUP_30     --          V
+Interlock Circuit Sink Current                      --          10          --          mA
+Idle Supply Current at 12V DC for VSUP_30           --          215         --          mA
+Idle Supply Current at 24V DC for VSUP_30           --          160         --          mA
+==================================================  =======     =======     =======     ====
+
+.. note::
+   The maximum supply voltage is limited by the SBC.
+   It is validated for limited duration for higher voltages.
+   For further information see the `SBC documentation`_.
+
+.. _SBC documentation: https://www.nxp.com/part/MC33FS8530A0ES
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Mechanical Dimensions (BMS-Master PCB only)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+==================================================  =======     =======
+Description                                         Value       Unit
+==================================================  =======     =======
+Width                                               120         mm
+Length                                              200         mm
+Height                                              13          mm
+Weight                                              129         g
+==================================================  =======     =======

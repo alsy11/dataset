@@ -1,0 +1,26 @@
+# Prevent project from being labeled as C++ project
+*.h linguist-language=C
+
+# Microsoft Office documents
+*.pptx diff=pptx
+
+# vendored files
+src/os/freertos/* linguist-vendored
+
+tests/scripts/waf-core/* linguist-vendored
+tools/vendor/* linguist-vendored
+tools/waf linguist-vendored
+
+*.zip binary
+
+*.sln text eol=crlf
+
+*.png binary
+*.jpg binary
+
+*.sh text eol=lf
+tests/cli/helpers/test_misc/checksum_test.txt eol=lf
+
+*.drawio text eol=lf
+
+*.pdf binary

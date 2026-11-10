@@ -1,0 +1,119 @@
+.. include:: ./../../../macros.txt
+.. include:: ./../../../units.txt
+
+
+.. |local_bms_slave_version| replace:: ``1.0.0``
+.. |local_bms_slave_identifier_short| replace:: |nxp-mc33775a|\ -based 14-Cell |bms-slave|
+.. |local_bms_slave_identifier_full| replace:: |local_bms_slave_identifier_short| |local_bms_slave_version|
+
+.. _NXP_MC33775A_BASED_14_CELL_BMS_SLAVE_V1_0_0:
+
+|local_bms_slave_identifier_full|
+=================================
+
+.. note::
+
+   The changelog for this release is found at
+   :numref:`CHANGELOG_FOR_THE_NXP_MC33775A_BASED_14_CELL_BMS_SLAVE_V1_0_0`.
+
+--------
+Overview
+--------
+
+.. important::
+
+   The following description only applies for the
+   |local_bms_slave_identifier_short|
+   version |local_bms_slave_version|.
+
+.. hint::
+
+   All connector pinouts described below follow the
+   :ref:`MOLEX_MICRO_FIT_3_0_CONNECTOR`.
+
+--------------
+Specifications
+--------------
+
+^^^^^^^^^^^^^^^^^^
+Electrical Ratings
+^^^^^^^^^^^^^^^^^^
+
+|tbc|
+
+^^^^^^^^^^^^^^^^^^^^^
+Mechanical Dimensions
+^^^^^^^^^^^^^^^^^^^^^
+
+.. csv-table:: Mechanical Dimensions
+   :name: mc33775a_slave_14cell_v1.0.0_mechanical_dimensions
+   :header-rows: 1
+   :delim: ;
+   :file: ./14-nxp-mc33775a-v1.0.0/14-nxp-mc33775a-v1.0.0_mechanical-dimensions.csv
+
+^^^^^^^^^^^^^
+Block Diagram
+^^^^^^^^^^^^^
+
+|tbc|
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+Schematic and Board Layout
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+More information about the board schematic and layout files can be found in
+section :ref:`DESIGN_RESOURCES`.
+
+---------
+Functions
+---------
+
+^^^^^^^^^^^^^^^^^^^^^^^^
+Cell Voltage Measurement
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+|tbc|
+
+^^^^^^^^^^^^^^^^^^^^^^
+Passive Cell Balancing
+^^^^^^^^^^^^^^^^^^^^^^
+
+|tbc|
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Global Cell Balancing Feedback
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+|tbc|
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Temperature Sensor Measurement
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+|tbc|
+
+^^^^^^^^^^^^^^^
+On-board EEPROM
+^^^^^^^^^^^^^^^
+
+|tbc|
+
+^^^^^^^^^^^^^^^^^^^^^^
+Daisy Chain Connection
+^^^^^^^^^^^^^^^^^^^^^^
+
+The data transmission between the slaves and between the slaves and the basic
+board takes place using the |tpl| interface.
+
+|tbc|
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Hardware Settings / Options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+|tbc|
+
+Status LED
+""""""""""
+
+|tbc|

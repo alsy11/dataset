@@ -1,0 +1,6 @@
+Connector ID    ; Functionality                         ; Pinout
+J300            ; Cell voltage measurement              ; TODO
+J301            ; |tpl-high|                            ; TODO
+J302            ; |tpl-low|                             ; TODO
+J304            ; Temperature sensors (T0-T7)           ; TODO
+J307            ; Temperature sensors (T8-15)           ; TODO

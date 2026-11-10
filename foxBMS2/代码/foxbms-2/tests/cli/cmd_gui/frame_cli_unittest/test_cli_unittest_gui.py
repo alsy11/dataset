@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2010 - 2026, Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V.
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# We kindly request you to use one or more of the following phrases to refer to
+# foxBMS in your hardware, software, documentation or advertising materials:
+#
+# - "This product uses parts of foxBMS®"
+# - "This product includes parts of foxBMS®"
+# - "This product is derived from foxBMS®"
+
+"""Testing file 'cli/cmd_gui/frame_cli_unittest/cli_unittest_gui.py'."""
+
+import importlib
+import os
+import shutil
+import sys
+import tkinter as tk
+import unittest
+from datetime import UTC, datetime
+from pathlib import Path
+from unittest.mock import patch
+
+try:
+    from cli.cmd_gui import frame_base
+    from cli.cmd_gui.frame_cli_unittest import cli_unittest_gui
+    from cli.helpers.project_context import PROJECT_BUILD_ROOT
+except ModuleNotFoundError:
+    sys.path.insert(0, str(Path(__file__).parents[4]))
+    from cli.cmd_gui import frame_base
+    from cli.cmd_gui.frame_cli_unittest import cli_unittest_gui
+    from cli.helpers.project_context import PROJECT_BUILD_ROOT
+
+try:
+    from tests.cli.cmd_gui.tk_helpers import managed_tk_root
+except ModuleNotFoundError:
+    from tests.cli.cmd_gui.tk_helpers import managed_tk_root
+
+RUN_TESTS = os.environ.get("DISPLAY", None) or sys.platform.startswith("win32")
+PATH_GUI = PROJECT_BUILD_ROOT / "cli_unittest_frame"
+
+
+@unittest.skipUnless(RUN_TESTS, "Non graphical tests only")
+class TestCliUnittestFrame(unittest.TestCase):
+    """Test of the CliUnittestFrame class"""
+
+    def setUp(self) -> None:  # noqa: D102
+        self.start_time = datetime.now(tz=UTC)
+        PATH_GUI.mkdir(parents=True, exist_ok=True)
+
+    def tearDown(self) -> None:  # noqa: D102
+        remove_data(self.start_time)
+        importlib.reload(frame_base)
+
+    def test_init(self) -> None:
+        """Test initialization of CliUnittestFrame class"""
+        with managed_tk_root() as root:
+            root.withdraw()
+            text = tk.Text(root)
+            with patch("cli.helpers.project_context.PROJECT_BUILD_ROOT", new=PATH_GUI):
+                importlib.reload(frame_base)
+                cli_unittest_gui.CliUnittestFrame(root, text)
+
+
+def remove_data(start_time: datetime) -> None:
+    """Remove all data from the gui directory if it as been created after start_time"""
+    if PATH_GUI.is_dir():
+        if get_birthtime(PATH_GUI) >= start_time:
+            shutil.rmtree(PATH_GUI)
+        else:
+            children = list(PATH_GUI.iterdir())
+            for child in children:
+                if get_birthtime(child) >= start_time:
+                    if child.is_dir():
+                        shutil.rmtree(child)
+                    else:
+                        child.unlink()
+
+
+def get_birthtime(object_name: Path) -> datetime:
+    """Return the birthtime of the given object"""
+    try:
+        birthtime = datetime.fromtimestamp(object_name.stat().st_birthtime, tz=UTC)
+    except AttributeError:
+        birthtime = datetime.fromtimestamp(object_name.stat().st_atime, tz=UTC)
+    return birthtime
+
+
+if __name__ == "__main__":
+    unittest.main()

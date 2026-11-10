@@ -1,0 +1,41 @@
+交付包说明
+来源：概要设计-完备性与一致性V2.html
+范围：页面中的九个仓库。内容已按目录提交，不再使用 zip。
+每个目录内有三个子目录：需求文档、概要设计、代码。
+需求文档和概要设计与页面登记的版本一致，太搜的概要设计已换成 2026-11-10 的新版本。
+代码取自该仓库 input/源码，不含 .git。解压时去掉了 .DS_Store 和 __MACOSX。
+
+BME280: 文件 16 个，原文 2.2 MB -> BME280/
+  需求：BME280_v8_需求规格说明书.docx  sha256:bc2e0c743f933982a9402aafd66f1f6b2e9c219e2227612f80c6e2c4aea9ab5f
+  概要设计：BME280概要设计V2.docx  sha256:c58aa908b5f4ebeaa7b018c97c6405fd150c061e1e33008e9a73f05d5d1834d9
+BME68x: 文件 17 个，原文 1.7 MB -> BME68x/
+  需求：BME68x_v4_需求规格说明书.docx  sha256:d82f31edb9ab43d1fc94f343d078a153b48686191392ed0f8ddfd0d7a81b3b31
+  概要设计：BME68x概要设计V2.docx  sha256:04d21d388d2b27715b4ebae72c26fc78b2c996af2ace1d297f9eb89be1e30e31
+crazyflie-firmware: 文件 12949 个，原文 439.6 MB -> crazyflie-firmware/
+  需求：crazyflie-firmware_需求规格说明书.md  sha256:72cc41ef3750750fb751cfe0e8c1bb8a0db2e2407225f9b75609fa6f9aac77d6
+  同时放入同名 docx。
+  概要设计：crazyflie-firmware概要设计V2.docx  sha256:29fc6594a3b4688090625794b2c7b61de7eea4bffde93921c52523c89bfb6f2d
+EBiCS_Firmware: 文件 274 个，原文 14.6 MB -> EBiCS_Firmware/
+  需求：EBiCS_Firmware_需求规格说明书.md  sha256:f73f545f8dd382439c29c4dd57abf263b4022ecdfcf2cabb342b715805efb0b5
+  同时放入同名 docx。
+  概要设计：EBiCS_Firmware概要设计V2.docx  sha256:6040a37ca99e6286728985a4830e3d67031e222e459e6ca57358b8745871f5dc
+ESCape32: 文件 68 个，原文 5.8 MB -> ESCape32/
+  需求：ESCape32_逆向需求规格说明书.md  sha256:29e13821cb4cd047efa4b59025a70d292cd544e58fda5ef30f70009c86b057ac
+  同时放入同名 docx。
+  概要设计：ESCape32概要设计V2.docx  sha256:4a7e2771998b1cbfe319c6b0a5769e2e4e8286e64124f8f7fd8c9225c0fce294
+EV-ECU: 文件 737 个，原文 82.0 MB -> EV-ECU/
+  需求：EV-ECU_v4_需求规格说明书.docx  sha256:457aa1a59e8dd686b63fa860f02ae140753da1740c86fb0d320402f9fa2559f5
+  概要设计：EV-ECU概要设计V2.docx  sha256:8d7a346e654d967a265d9e9447b8184e999958301485c0b472914bb0e6acf199
+foxBMS2: 文件 3014 个，原文 32.3 MB -> foxBMS2/
+  需求：foxBMS2_v4_需求规格说明书.docx  sha256:42ac122006c27d704e498d2d18dcc4238ec9fc81a93a14a192d091263f56f27d
+  概要设计：foxBMS2概要设计V2.docx  sha256:1af5a4909840da0cdd74263552715d9806cf8945b791276dc8f4e5ca116ed32e
+FreeEMS: 文件 399 个，原文 2.2 MB -> FreeEMS/
+  需求：FreeEMS_需求规格说明书.md  sha256:5b8f27d17ced15c7cc9bc5ebf5a33a81bd1b2f93e403643c7bc6c2aad5fcc5db
+  同时放入同名 docx。
+  概要设计：FreeEMS概要设计V2.docx  sha256:e49bf1d9113a569b9744004a2ac3db7051f8e8d105fd08497d9cce6a5f86ef2d
+太搜: 文件 107 个，原文 7.4 MB -> 太搜/
+  代码来自 SAMCodeSynthesis - 0709\SAMCodeSynthesis，只保留这套综合代码。
+  已去掉 .git、.vs、x64 编译产物和 .DS_Store，不包含另外两套重写工程。
+  需求：太搜需求功能（源）.docx  sha256:c5382384d8afbf92cb6905b62e23a38d4d501ecf76d57b76ab5f1cb5adc458f5
+  概要设计：太搜概要设计V2.docx  sha256:3759b1d0fa2927113f4a7c53179164178224d2278c8ce0c2e20f465638fe604e
+  该概要设计为 2026-11-10 新版本，替换原 sha256:1b63b49f9ec7783047f2eeca6b789f813609f5d09f61f5fbdda22539bc052a99

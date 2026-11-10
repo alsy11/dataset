@@ -1,0 +1,6 @@
+Symbol                      ; Reference Name         ; Description
+|pack-voltage-abbr|         ; |pack-voltage|         ; Pack voltage
+|fused-pack-voltage-abbr|   ; |fused-pack-voltage|   ; voltage after main fuse
+|system-voltage-abbr|       ; |system-voltage|       ; System voltage
+|system-voltage2-abbr|      ; |system-voltage2|      ; System voltage: second power path
+|pack-current-abbr|         ; |pack-current|         ; Pack current

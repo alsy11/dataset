@@ -1,0 +1,170 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2010 - 2026, Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V.
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# We kindly request you to use one or more of the following phrases to refer to
+# foxBMS in your hardware, software, documentation or advertising materials:
+#
+# - "This product uses parts of foxBMS®"
+# - "This product includes parts of foxBMS®"
+# - "This product is derived from foxBMS®"
+
+from waflib.Build import BuildContext
+
+
+def build(bld: BuildContext) -> None:
+    op = f"{bld.env.APPNAME.lower()}-object-"
+    lp = f"{bld.env.APPNAME.lower()}-"
+    ip = f"{bld.env.APPNAME.lower()}-incpath-"
+    cp = f"{bld.env.APPNAME.lower()}-config-"
+
+    bld.recurse("config")
+
+    have_diagnostic_sources = bld.path.ant_glob("diag/adi_ades1830_*.c")
+    if have_diagnostic_sources:
+        bld.recurse("diag")
+
+    use = [
+        f"{lp}hal",
+        f"{ip}afe",
+        f"{ip}rtos-kernel",
+        f"{cp}battery_system_cfg",
+    ]
+
+    includes = [
+        bld.srcnode.find_node("src/app/application/config"),
+        bld.srcnode.find_node("src/app/driver/config"),
+        bld.srcnode.find_node("src/app/driver/mcu"),
+        bld.srcnode.find_node("src/app/driver/pex"),
+        bld.srcnode.find_node("src/app/driver/rtc"),
+        bld.srcnode.find_node("src/app/driver/spi"),
+        bld.srcnode.find_node("src/app/driver/ts"),
+        bld.srcnode.find_node("src/app/driver/ts/api"),
+        bld.srcnode.find_node("src/app/engine/config"),
+        bld.srcnode.find_node("src/app/engine/database"),
+        bld.srcnode.find_node("src/app/engine/diag"),
+        bld.srcnode.find_node("src/app/main/include"),
+        bld.srcnode.find_node("src/app/task/config"),
+        bld.srcnode.find_node("src/app/task/ftask"),
+        bld.srcnode.find_node("src/app/task/os"),
+    ]
+
+    source = "adi_ades1830_balancing"
+    bld.objects(
+        source=f"{source}.c",
+        includes=includes,
+        use=use,
+        uselib="FOXBMS",
+        target=f"{op}{source}",
+    )
+
+    source = "adi_ades1830_gpio_voltages"
+    bld.objects(
+        source=f"{source}.c",
+        includes=includes,
+        use=use,
+        uselib="FOXBMS",
+        target=f"{op}{source}",
+    )
+
+    bld(
+        export_includes=[
+            bld.path,
+            bld.path.find_node("config"),
+            bld.path.find_node("diag"),
+            bld.srcnode.find_node("src/app/driver/afe/adi/common/ades183x/"),
+            bld.srcnode.find_node("src/app/driver/afe/adi/common/ades183x/api"),
+            bld.srcnode.find_node("src/app/driver/afe/adi/common/ades183x/config"),
+            bld.srcnode.find_node("src/app/driver/afe/adi/common/ades183x/diag"),
+            bld.srcnode.find_node("src/app/driver/afe/adi/common/ades183x/pec"),
+            bld.srcnode.find_node("src/app/driver/afe/api"),
+        ],
+        target=f"{ip}afe-adi_ades1830",
+    )
+
+    use = [
+        f"{op}adi_ades1830_balancing",
+        f"{op}adi_ades1830_cfg",
+        f"{op}adi_ades1830_gpio_voltages",
+        f"{op}adi_ades183x_afe",
+        f"{op}adi_ades183x_afe_dma",
+        f"{op}adi_ades183x_pec",
+        f"{op}adi_ades183x_cfg",
+        f"{op}adi_ades183x",
+        f"{op}adi_ades183x_buffers",
+        f"{op}adi_ades183x_commands_voltages",
+        f"{op}adi_ades183x_commands",
+        f"{op}adi_ades183x_helpers",
+        f"{op}adi_ades183x_initialization",
+        f"{op}adi_ades183x_mux",
+        f"{op}adi_ades183x_temperatures",
+        f"{op}adi_ades183x_voltages",
+    ]
+    if have_diagnostic_sources:
+        use.extend(
+            [
+                f"{op}adi_ades1830_sm_vgpio_red",
+                f"{op}adi_ades183x_diagnostic",
+                f"{op}adi_ades183x_sm_auxregs_diag",
+                f"{op}adi_ades183x_sm_cell_owd_diag",
+                f"{op}adi_ades183x_sm_cell_owd",
+                f"{op}adi_ades183x_sm_clock_mon_diag",
+                f"{op}adi_ades183x_sm_clock_mon",
+                f"{op}adi_ades183x_sm_dietemp_oor",
+                f"{op}adi_ades183x_sm_freeze_seq",
+                f"{op}adi_ades183x_sm_iir_red",
+                f"{op}adi_ades183x_sm_nvm_ecc_diag",
+                f"{op}adi_ades183x_sm_nvm_ecc",
+                f"{op}adi_ades183x_sm_power_mon_diag",
+                f"{op}adi_ades183x_sm_power_mon",
+                f"{op}adi_ades183x_sm_power_oor",
+                f"{op}adi_ades183x_sm_sleep_ind",
+                f"{op}adi_ades183x_sm_spi_pec_diag",
+                f"{op}adi_ades183x_sm_spi_red_diag",
+                f"{op}adi_ades183x_sm_spi_red",
+                f"{op}adi_ades183x_sm_thsd_ind_diag",
+                f"{op}adi_ades183x_sm_tmod_ind_diag",
+                f"{op}adi_ades183x_sm_tmod_ind",
+                f"{op}adi_ades183x_sm_vcell_cmp_diag",
+                f"{op}adi_ades183x_sm_vcell_oor",
+                f"{op}adi_ades183x_sm_vcell_red",
+                f"{op}adi_ades183x_sm_vgpio_oor",
+                f"{op}adi_ades183x_sm_vref2_oor",
+            ]
+        )
+    else:
+        use.append(f"{op}adi_ades183x_diagnostic_w")
+
+    bld(
+        features="c cstlib",
+        use=use,
+        target=f"{lp}afe",
+    )

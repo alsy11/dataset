@@ -1,0 +1,775 @@
+# Copyright (c) 2010 - 2026, Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V.
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# We kindly request you to use one or more of the following phrases to refer to
+# foxBMS in your hardware, software, documentation or advertising materials:
+#
+# - "This product uses parts of foxBMS®"
+# - "This product includes parts of foxBMS®"
+# - "This product is derived from foxBMS®"
+
+exclude: |
+  (?x)^(
+      src/os/freertos/freertos(-plus)?/.*\.[c|h]|
+      src/os/freertos/freertos(-plus)?/.*\.url|
+      src/os/freertos/freertos(-plus)?/.*\.github/.*|
+      src/os/freertos/freertos(-plus)?/.*include/.*|
+      src/os/freertos/freertos(-plus)?/.*portable/.*|
+      src/os/freertos/freertos(-plus)?/.*History\.txt|
+      src/os/freertos/freertos(-plus)?/.*LICENSE\.md|
+      src/os/freertos/freertos(-plus)?/.*README\.md|
+      src/os/freertos/freertos(-plus)?/.*readme\.txt|
+      src/os/freertos/freertos(-plus)?/.*GettingStarted\.md|
+      tests/hil/server/pi_pico/fault_injector/mcp23017\.py|
+      tools/cmock/.*|
+      tools/dbc/third-party/.*|
+      tools/waf
+  )$
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-ast
+        files: |
+          (?x)^(
+            .*\.py|
+            .*wscript
+          )$
+      - id: check-builtin-literals
+        files: |
+          (?x)^(
+            .*\.py|
+            .*wscript
+          )$
+      - id: check-case-conflict
+      - id: check-docstring-first
+        files: |
+          (?x)^(
+            .*\.py|
+            .*wscript
+          )$
+      - id: check-executables-have-shebangs
+      - id: check-illegal-windows-names
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-toml
+      - id: check-vcs-permalinks
+      - id: check-yaml
+        # .gitlab/ci_pipeline/build_app_ti_arm_cgt.yml --> duplicate key - but its not
+        exclude: |
+          (?x)^(
+            \.gitlab/ci_pipeline/build_app_ti_arm_cgt\.yml|
+            \.gitlab/ci_pipeline/build\.ccs\.yml|
+            \.gitlab/ci_pipeline/static_program_analysis_evaluation\.yml|
+            \.gitlab/ci_pipeline/static_program_analysis\.yml|
+            tests/cli/cmd_plot/test_execution/test_yaml_error.yaml
+          )$
+        args: [--allow-multiple-documents]
+      - id: debug-statements
+        files: |
+          (?x)^(
+            .*(\.py)|
+            .*wscript
+          )$
+      - id: destroyed-symlinks
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: fix-byte-order-marker
+      - id: forbid-submodules
+      - id: mixed-line-ending
+        args: [--fix=no]
+        exclude: |
+          (?x)^(
+            tests/cli/pre_commit_scripts/test_check_doxygen/invalid-encoding_utf-16\.c|
+            tests/cli/pre_commit_scripts/test_check_encoding/utf-16\.txt|
+            tests/cli/pre_commit_scripts/test_check_for_tabs/tabs_2\.txt
+          )$
+      - id: name-tests-test
+        args: [--unittest]
+        exclude: |
+          (?x)^(
+            tests/can/check_ids\.py|
+            tests/can/check_implemented\.py|
+            tests/ccs/ccs_build_helper\.py|
+            tests/cli/pre_commit_scripts/test_check_license_info/valid-license\.py|
+            tests/cli/cmd_gui/tk_helpers\.py|
+            tests/c-std/c-std-test\.py|
+            tests/dbc/check_parseable\.py|
+            tests/dbc/overlapping-signals\.py|
+            tests/hil/.*\.py|
+            tests/variants/validate-directory-names\.py
+          )$
+      - id: no-commit-to-branch
+        args: [--branch, master]
+      - id: pretty-format-json
+        args: [--indent, "2", --no-sort-keys, --autofix]
+        exclude: |
+          (?x)^()$
+      - id: requirements-txt-fixer
+      - id: trailing-whitespace
+        exclude: (?x)^(
+          .*\.(dil)|
+          .*\.(patch)|
+          src/app/driver/afe/nxp/(common/)?mc3377.*/vendor/.*\.[c|h]|
+          tests/fox-cmds/etl/test.DTA
+          )$
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.16
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.21.2
+    hooks:
+      - id: pyupgrade
+        files: |
+          (?x)^(
+            .*(\.py)|
+            .*wscript
+          )$
+  - repo: local
+    hooks:
+      - id: forbidden-file-types
+        name: check file types
+        language: fail
+        entry: Forbidden file types based on file extension
+        files: '.*\.(xlsx|docx|vsdx)'
+  - repo: local
+    hooks:
+      - id: check-file-name
+        name: check file names
+        entry: file names must be alphanumeric and lower-case
+        language: fail
+        files: "[^a-z0-9._/-]"
+        exclude: |
+          (?x)^(
+            .*README(\.foxbms)?\.md|
+            \.github/ISSUE_TEMPLATE/general_issue\.md|
+            \.github/PULL_REQUEST_TEMPLATE\.md|
+            BSD-3-Clause\.txt|
+            CC-BY-4\.0\.txt|
+            CHANGELOG\.md|
+            CITATION\.cff|
+            INSTALL\.md|
+            LICENSE\.md|
+            src/app/driver/afe/nxp/mc3377.*/vendor/MC3377.*\.h|
+            tests/unit/os/freertos/freertos-plus/freertos-plus-tcp/source/portable/NetworkInterface/tms570lc435/test_NetworkInterface.c|
+            tests/unit/os/freertos/freertos-plus/freertos-plus-tcp/source/portable/NetworkInterface/tms570lc435/test\.json|
+            tests/fox-cmds/etl/test.DTA
+          )$
+  - repo: local
+    hooks:
+      - id: pylint
+        name: pylint
+        entry: pylint
+        language: system
+        types: [python]
+        files: |
+          (?x)^(
+            .*(\.py)|
+            .*wscript
+          )$
+        require_serial: true
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: mypy
+        types: [python]
+        language: system
+        args:
+          - ./cli/ # works on Linux and Windows
+        pass_filenames: false
+      # - id: mypy
+      #   name: mypy
+      #   entry: mypy
+      #   types: [python]
+      #   language: system
+      #   args:
+      #     - --explicit-package-bases
+      #     - ./tests/cli # works on Linux and Windows
+      #   pass_filenames: false
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: "v22.1.5"
+    hooks:
+      - id: clang-format
+        args: [--style=file]
+        types_or: [c]
+        exclude: |
+          (?x)^(
+            tests/cli/pre_commit_scripts/test_check_doxygen/invalid-encoding_utf-16\.c
+          )$
+  - repo: local
+    hooks:
+      - id: check-license-header-bsd-3-clause
+        name: check license header [BSD-3-Clause]
+        exclude_types: [binary, json, markdown, rst, svg]
+        exclude: |
+          (?x)^(
+            .*\.gitignore|
+            .*\.gitattributes|
+            .*\.dummy|
+            .*\.drawio|
+            .*\.clang-format|
+            .*\.txt|
+            .*/adi/.*/diag/.*|
+            \.gitlab/.*|
+            \.gitlab-ci\.yml|
+            docs/.*\.csv|
+            docs/.*\.conf.in|
+            docs/.*\.jsonl|
+            docs/.*doxygen_layout\.xml|
+            (src|tests/unit)/(app|bootloader)/hal/(app|bootloader)-hl_notification\.c|
+            (src|tests/unit)/app/driver/emac/(test_)?emac(-low-level)?\.[c|h]|
+            src/(app|bootloader)/main/(app|bootloader)\.cmd|
+            src/app/driver/afe/nxp/common/mc3377x/nxp_mc3377x-ll\.[c|h]|
+            src/bootloader/driver/crc/vendor/crc64_calc\.[c|h]|
+            src/bootloader/main/intvecs(_init)?\.asm|
+            src/app/driver/sbc/fs8x_driver/.*\.[c|h]|
+            src/app/driver/afe/nxp/common/mc3377x/vendor/uc_msg_t\.[c|h]|
+            src/app/driver/afe/nxp/mc3377\da/vendor/MC3377\dA\.h|
+            src/app/driver/phy/dp83869\.[c|h]|
+            src/app/driver/config/spi_cfg_.*\.c|
+            (src|tests/unit)/(app|bootloader)/main/(test_)?fstartup\.c|
+            (src|tests/unit)/(app|bootloader)/main/include/(test_)?fstartup\.h|
+            tests/cli/pre_commit_scripts/test_check_cpp_style_comment/cpp-style-comment_\d\.c|
+            tests/cli/pre_commit_scripts/test_check_cpp_style_comment/no-cpp-style-comment-link\.c|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file_invalid_content\.[c|h]|
+            tests/cli/pre_commit_scripts/test_check_doxygen/invalid-encoding_utf-16\.c|
+            tests/cli/pre_commit_scripts/test_check_license_info/invalid-license\.c|
+            tests/cli/pre_commit_scripts/test_check_license_info/no-license\.c|
+            tests/hardware/bms-master_test/apply_patches_and_build\.sh|
+            tests/variants/c_.*/patch\.ps1|
+            \.gitlab/ci/tests/test_create_readme/valid_ci\.yaml|
+            tests/hil/.*|
+            tools/dbc/.*|
+            tools/waf_tools/crc64_ti_impl\.py
+          )$
+        language: system
+        entry: python cli/pre_commit_scripts/check_license_info.py --license-type=BSD-3-Clause
+      - id: check-license-header-confidential
+        name: check license header [confidential]
+        types: [text]
+        exclude_types: [binary, json, markdown]
+        exclude: |
+          (?x)^(
+            .*\.gitignore|
+            .*\.gitattributes|
+            .*\.dummy|
+            .*\.drawio|
+            .*\.clang-format|
+            .*\.txt|
+            (docs|src|tests)/wscript|
+            (src|tests/unit)/app/application.*|
+            (src|tests/unit)/app/doxygen_app.*\.h|
+            (src|tests/unit)/app/driver/adc/.*|
+            (src|tests/unit)/app/driver/afe/adi/ades1830/(api|config|pec)/wscript|
+            (src|tests/unit)/app/driver/afe/adi/(common/)?ades183[0|x]/(api|config|pec)?/?(test_)?adi_.*\.[c|h]|
+            (src|tests/unit)/app/driver/afe/adi/ades1830/wscript|
+            (src|tests/unit)/app/driver/afe/adi/common/(ades183x/)?(api|config|pec)?/?wscript|
+            (src|tests/unit)/app/driver/afe/adi/wscript|
+            (src|tests/unit)/app/driver/afe/api/.*|
+            (src|tests/unit)/app/driver/afe/debug/.*|
+            (src|tests/unit)/app/driver/afe/ltc/.*|
+            (src|tests/unit)/app/driver/afe/maxim/.*|
+            (src|tests/unit)/app/driver/afe/nxp/api/.*|
+            (src|tests/unit)/app/driver/afe/nxp/common/mc3377x/(test_)?nxp_mc3377x.*\.[c|h]|
+            (src|tests/unit)/app/driver/afe/nxp/common/mc3377x/vendor/.*\.[c|h]|
+            (src|tests/unit)/app/driver/afe/nxp/common/mc3377x/vendor/wscript|
+            (src|tests/unit)/app/driver/afe/nxp/common/mc3377x/wscript|
+            (src|tests/unit)/app/driver/afe/nxp/common/wscript|
+            (src|tests/unit)/app/driver/afe/nxp/mc3377.a/vendor/MC3377.A\.h|
+            (src|tests/unit)/app/driver/afe/nxp/mc33775a/.*|
+            (src|tests/unit)/app/driver/afe/nxp/wscript|
+            (src|tests/unit)/app/driver/afe/st/api/.*|
+            (src|tests/unit)/app/driver/afe/st/wscript|
+            (src|tests/unit)/app/driver/afe/ti/api/.*|
+            (src|tests/unit)/app/driver/afe/ti/common/api/(test_)?ti_bq79xxx_afe_dma\.[c|h]|
+            (src|tests/unit)/app/driver/afe/ti/common/api/wscript|
+            (src|tests/unit)/app/driver/afe/ti/common/wscript|
+            (src|tests/unit)/app/driver/afe/ti/dummy/.*|
+            (src|tests/unit)/app/driver/afe/ti/wscript|
+            (src|tests/unit)/app/driver/afe/wscript|
+            (src|tests/unit)/app/driver/can/.*|
+            (src|tests/unit)/app/driver/can/cbs/.*|
+            (src|tests/unit)/app/driver/can/cbs/rx/.*|
+            (src|tests/unit)/app/driver/can/cbs/tx-async/.*|
+            (src|tests/unit)/app/driver/can/cbs/tx-cyclic/.*|
+            (src|tests/unit)/app/driver/config/.*|
+            (src|tests/unit)/app/driver/contactor/.*|
+            (src|tests/unit)/app/driver/crc/.*|
+            (src|tests/unit)/app/driver/dma/.*|
+            (src|tests/unit)/app/driver/emac/.*|
+            (src|tests/unit)/app/driver/foxmath/.*|
+            (src|tests/unit)/app/driver/fram/.*|
+            (src|tests/unit)/app/driver/htsensor/.*|
+            (src|tests/unit)/app/driver/i2c/.*|
+            (src|tests/unit)/app/driver/imd/.*|
+            (src|tests/unit)/app/driver/imd/bender/.*|
+            (src|tests/unit)/app/driver/imd/bender/ir155/.*|
+            (src|tests/unit)/app/driver/imd/bender/iso165c/.*|
+            (src|tests/unit)/app/driver/imd/none/.*|
+            (src|tests/unit)/app/driver/imd/none/none/.*|
+            (src|tests/unit)/app/driver/interlock/.*|
+            (src|tests/unit)/app/driver/io/.*|
+            (src|tests/unit)/app/driver/led/.*|
+            (src|tests/unit)/app/driver/mcu/.*|
+            (src|tests/unit)/app/driver/meas/.*|
+            (src|tests/unit)/app/driver/pex/.*|
+            (src|tests/unit)/app/driver/phy/.*|
+            (src|tests/unit)/app/driver/pwm/.*|
+            (src|tests/unit)/app/driver/rtc/.*|
+            (src|tests/unit)/app/driver/sbc/.*|
+            (src|tests/unit)/app/driver/sbc/fs8x_driver/.*|
+            (src|tests/unit)/app/driver/spi/.*|
+            (src|tests/unit)/app/driver/sps/.*|
+            (src|tests/unit)/app/driver/ts/.*|
+            (src|tests/unit)/app/driver/uart/.*|
+            (src|tests/unit)/app/driver/wscript|
+            (src|tests/unit)/app/engine/.*|
+            (src|tests/unit)/app/hal/app-hl_notification\.c|
+            (src|tests/unit)/app/hal/test_app-hl_notification\.c|
+            (src|tests/unit)/app/hal/wscript|
+            (src|tests/unit)/app/main/.*|
+            (src|tests/unit)/app/task/config/.*|
+            (src|tests/unit)/app/task/ftask/(test_)?ftask\.[c|h]|
+            (src|tests/unit)/app/task/ftask/freertos/.*|
+            (src|tests/unit)/app/task/ftask/wscript|
+            (src|tests/unit)/app/task/os/(test_)?os\.[c|h]|
+            (src|tests/unit)/app/task/os/freertos/.*|
+            (src|tests/unit)/app/task/os/wscript|
+            (src|tests/unit)/app/task/timer/.*|
+            (src|tests/unit)/app/task/wscript|
+            (src|tests/unit)/app/wscript|
+            (src|tests/unit)/bootloader/.*|
+            (src|tests/unit)/wscript|
+            (tests/)?cli/.*|
+            \.pre-commit-config\.yaml|
+            conf/bms/templates/battery_.*_template\.[c|h]|
+            conf/bms/templates/diag_array_cfg_template\.c|
+            conf/hcg/.*|
+            conf/tpl/.*|
+            conf/unit/.*\.yml|
+            docs/conf\.py|
+            docs/developer-manual/fox-cli/.*|
+            docs/developer-manual/style-guide/examples/.*|
+            docs/developer-manual/style-guide/state-machine-example/.*|
+            docs/software/build-process/misc/.*|
+            docs/software/configuration/wscript|
+            docs/software/modules/driver/can/.*|
+            docs/software/modules/driver/contactor/.*|
+            docs/software/modules/engine/database/.*|
+            docs/software/modules/task/ftask/.*|
+            docs/software/unit-tests/.*|
+            docs/system/wscript|
+            docs/tools/fox/.*|
+            fox\.(ps1|py|sh)|
+            hatch_build\.py|
+            pyproject\.toml|
+            src/os/freertos/.*|
+            src/os/wscript|
+            src/portable/cortex-r5/processor_modes\.asm|
+            src/portable/wscript|
+            src/portable/cortex-r5/wscript|
+            src/version/version\.h|
+            tests/can/.*|
+            tests/ccs/.*|
+            tests/c-std/.*|
+            tests/dbc/.*|
+            tests/fox/.*|
+            tests/fox-cmds/.*|
+            tests/pkg/.*|
+            tests/unit/app/driver/afe/adi/ades1830/include/adi_ades1830_helpers_test-data-[r|w]db\.h|
+            tests/unit/app/driver/afe/adi/common/ades183x/include/adi_ades183x_helpers_test-data-[r|w]db\.h|
+            tests/unit/app/task/ftask/test_ftask_(afe|emac|uart)\.c|
+            tests/unit/doxygen_tests\.h|
+            tests/unit/gen_hcg/.*|
+            tests/unit/os/freertos/freertos-plus/freertos-plus-tcp/source/portable/NetworkInterface/tms570lc435/test_NetworkInterface\.c|
+            tests/unit/support/.*|
+            tests/unit-hw/.*|
+            tests/variants/p_.*/patch\.ps1|
+            tests/variants/apply-test-case\.ps1|
+            tests/variants/validate-directory-names\.py|
+            tests/waf_tools/.*|
+            tools/.*|
+            wscript
+          )$
+        language: system
+        entry: python cli/pre_commit_scripts/check_license_info.py --license-type=confidential
+      - id: check-file-encoding
+        name: check encoding
+        language: system
+        entry: python cli/pre_commit_scripts/check_encoding.py
+        types: [text]
+        exclude_types: [binary]
+        exclude: |
+          (?x)^(
+            src/app/driver/afe/nxp/(common/)?mc3377.*/vendor/.*\.[c|h]|
+            tests/cli/pre_commit_scripts/test_check_doxygen/invalid-encoding_utf-16\.c|
+            tests/cli/pre_commit_scripts/test_check_encoding/utf-16\.txt|
+            tests/cli/pre_commit_scripts/test_check_for_tabs/tabs_2\.txt
+          )$
+      - id: unique-file-names
+        name: check file name uniqueness
+        language: system
+        entry: python cli/pre_commit_scripts/check_file_names.py
+        exclude: |
+          (?x)^(
+            .*\.clang-format|
+            .*\.dummy|
+            .*\.gitignore|
+            .*__init__\.py|
+            .*__main__\.py|
+            .*main\.py|
+            .*misc\.py|
+            .*README(\.foxbms)?\.md|
+            .*test\.json|
+            .*wscript|
+            .*/vendor/hashes\.json|
+            \.gitlab/ci_pipeline/build_app_ti_arm_cgt\.yml|
+            \.gitlab/ci_pipeline/static_program_analysis_evaluation\.yml|
+            \.gitlab/ci_pipeline/test_hil\.yml|
+            LICENSE\.md|
+            docs/tools/fox/db/examples/.*|
+            src/(app|bootloader)/driver/(can|config)/can_cfg\.[c|h]|
+            src/(app|bootloader)/driver/can(/cbs)?/can_helper\.[c|h]|
+            src/(app|bootloader)/driver/can/can\.[c|h]|
+            src/(app|bootloader)/driver/crc/crc\.[c|h]|
+            src/(app|bootloader)/driver/foxmath/foxmath\.[c|h]|
+            src/(app|bootloader)/driver/foxmath/utils\.[c|h]|
+            src/(app|bootloader)/driver/io/io\.[c|h]|
+            src/(app|bootloader)/driver/mcu/mcu\.h|
+            src/(app|bootloader)/main/fassert\.c|
+            src/(app|bootloader)/main/fstartup\.c|
+            src/(app|bootloader)/main/include/fassert\.h|
+            src/(app|bootloader)/main/include/fstartup\.h|
+            src/(app|bootloader)/main/include/fstd_types\.h|
+            src/(app|bootloader)/main/include/fsystem\.h|
+            src/(app|bootloader)/main/include/general\.h|
+            src/(app|bootloader)/main/include/infinite-loop-helper\.h|
+            src/(app|bootloader)/main/include/main\.h|
+            src/(app|bootloader)/main/main\.c|
+            src/app/driver/afe/ltc/common/ltc_defs\.h|
+            src/app/driver/afe/nxp/common/mc3377x/vendor/uc_msg_t\.[c|h]|
+            src/app/driver/config/can_cfg\.[c|h]|
+            src/app/driver/interlock/interlock\.c|
+            \.gitlab/ci/tests/test_check_ci_config/good/.*\.yml|
+            \.gitlab/ci/tests/test_check_ci_config/invalid-bl/.*\.yml|
+            \.gitlab/ci/tests/test_check_ci_config/invalid-tcp/.*\.yml|
+            tests/fox-cmds/db/dummy_db/.*|
+            tests/unit/(app|bootloader)/driver/can/test_can_can_message_notification\.c|
+            tests/unit/(app|bootloader)/driver/(can|config)/test_can_cfg\.c|
+            tests/unit/(app|bootloader)/driver/can(/cbs)?/test_can_helper\.c|
+            tests/unit/(app|bootloader)/driver/can/test_can\.c|
+            tests/unit/(app|bootloader)/driver/crc/test_crc\.c|
+            tests/unit/(app|bootloader)/driver/foxmath/test_foxmath\.c|
+            tests/unit/(app|bootloader)/driver/foxmath/test_utils\.c|
+            tests/unit/(app|bootloader)/driver/io/test_io\.c|
+            tests/unit/(app|bootloader)/main/helper/m_esm.h|
+            tests/unit/(app|bootloader)/main/test_fassert\.c|
+            tests/unit/(app|bootloader)/main/test_fstartup\.c|
+            tests/unit/(app|bootloader)/main/test_main\.c|
+            (tests/variants/.*|conf/bms)/battery_cell_so(c|e)_lookup-table\.csv|
+            (tests/variants/.*|conf/bms)/battery_cell_cfg\.json|
+            (tests/variants/.*|conf/bms)/battery_system_cfg\.json|
+            (tests/variants/.*|conf/bms)/bms\.json|
+            (tests/variants/.*|conf/bms)/diag_array_cfg\.json|
+            tests/variants/.*/patch.ps1|
+            tools/ide/vscode/.*/c_cpp_properties\.json|
+            tools/ide/vscode/.*/launch\.json|
+            tools/ide/vscode/.*/settings\.json|
+            tools/ide/vscode/.*/tasks\.json
+          )$
+      - id: check-for-tabs
+        name: check for tabs
+        language: system
+        entry: python cli/pre_commit_scripts/check_for_tabs.py
+        types: [text]
+        exclude: |
+          (?x)^(
+            src/app/driver/afe/nxp/common/mc3377x/vendor/uc_msg_t\.[c|h]|
+            tests/cli/pre_commit_scripts/test_check_for_tabs/tabs_0\.txt|
+            tests/cli/pre_commit_scripts/test_check_for_tabs/tabs_1\.txt|
+            tests/cli/pre_commit_scripts/test_check_for_tabs/tabs_2\.txt|
+            tests/fox-cmds/etl/test.DTA
+          )$
+      - id: check-include-guard
+        name: check include guard
+        language: system
+        entry: python cli/pre_commit_scripts/check_include_guard.py
+        types: [c]
+        files: .*\.h
+        exclude: |
+          (?x)^(
+            conf/bms/templates/battery_.*_template\.[c|h]|
+            conf/tpl/c\.h|
+            src/app/driver/afe/nxp/(common/)?mc3377.*/vendor/.*\.h|
+            src/app/driver/sbc/fs8x_driver/.*\.h|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file_empty\.h|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file_invalid_content\.h|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file\.c|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file_multiple\.h|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file_valid\.h
+          )$
+      - id: check-c-section-markers
+        name: check section marker [src]
+        language: system
+        entry: python cli/pre_commit_scripts/check_sections.py --file-type=src
+        types: [c]
+        exclude: |
+          (?x)^(
+            conf/bms/templates/battery_.*_template\.[c|h]|
+            conf/tpl/test_c\.c|
+            conf/tpl/test_c\.h|
+            docs/developer-manual/style-guide/examples/c-006-test\.[c|h]|
+            docs/software/unit-tests/test_abc\.c|
+            src/app/application/config/battery_system_cfg_types\.h|
+            src/app/driver/afe/nxp/(common/)?mc3377.*/vendor/.*|
+            src/app/driver/sbc/fs8x_driver/.*|
+            src/bootloader/driver/crc/vendor/.*\.[c|h]|
+            tests/cli/pre_commit_scripts/test_check_license_info/invalid-license\.c|
+            tests/cli/pre_commit_scripts/test_check_license_info/no-license\.c|
+            tests/cli/pre_commit_scripts/test_check_cpp_style_comment/cpp-style-comment_[0|1|2|3]\.c|
+            tests/cli/pre_commit_scripts/test_check_cpp_style_comment/no-cpp-style-comment(-link)?\.c|
+            tests/cli/pre_commit_scripts/test_check_doxygen/.*|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file_empty\.h|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file_invalid_content\.h|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file\.c|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file_multiple\.h|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file_valid\.h|
+            tests/cli/pre_commit_scripts/test_check_sections/valid-sections-test\.[c|h]|
+            tests/cli/pre_commit_scripts/test_check_sections/invalid-sections-test-\d\.[c|h]|
+            tests/cli/pre_commit_scripts/test_check_license_info/valid-license\.c|
+            tests/unit/.*
+          )$
+      - id: check-c-section-markers
+        name: check section marker [test]
+        language: system
+        entry: python cli/pre_commit_scripts/check_sections.py --file-type=test
+        types: [c]
+        exclude: |
+          (?x)^(
+            conf/bms/templates/battery_.*_template\.[c|h]|
+            conf/bms/templates/diag_array_cfg_template\.c|
+            conf/tpl/c\.[h|c]|
+            docs/developer-manual/style-guide/examples/c-004\.c|
+            docs/developer-manual/style-guide/examples/c-005\.[c|h]|
+            docs/developer-manual/style-guide/examples/c-006-source\.[c|h]|
+            docs/developer-manual/style-guide/examples/c-007_abc\.[c|h]|
+            docs/developer-manual/style-guide/examples/c-007_abc_cfg\.c|
+            docs/developer-manual/style-guide/examples/c-007_abc_cfg\.h|
+            docs/developer-manual/style-guide/examples/c-008\.[c|h]|
+            docs/developer-manual/style-guide/examples/c-009\.c|
+            docs/developer-manual/style-guide/examples/c-011\.[c|h]|
+            docs/developer-manual/style-guide/examples/c-012\.c|
+            docs/developer-manual/style-guide/examples/c-013\.[c|h]|
+            docs/developer-manual/style-guide/examples/c-015\.[c|h]|
+            docs/developer-manual/style-guide/examples/c-016\.c|
+            docs/developer-manual/style-guide/examples/c-017\.c|
+            docs/developer-manual/style-guide/examples/c-018\.c|
+            docs/developer-manual/style-guide/examples/c-019\.c|
+            docs/developer-manual/style-guide/examples/c-020\.c|
+            docs/developer-manual/style-guide/examples/c-021\.c|
+            docs/developer-manual/style-guide/examples/c-022\.c|
+            docs/developer-manual/style-guide/examples/c-023\.c|
+            docs/developer-manual/style-guide/examples/c-024\.c|
+            docs/developer-manual/style-guide/examples/c-025\.c|
+            docs/developer-manual/style-guide/examples/c-026\.c|
+            docs/developer-manual/style-guide/examples/c-027\.c|
+            docs/developer-manual/style-guide/examples/c-028\.c|
+            docs/developer-manual/style-guide/examples/c-028-battery-defines\.c|
+            docs/developer-manual/style-guide/state-machine-example/state-machine\.[c|h]|
+            docs/software/build-process/misc/libproject-example\.[c|h]|
+            docs/software/modules/driver/can/can_how-to_tx_async\.[c|h]|
+            docs/software/modules/driver/can/can_how-to_tx_cyclic\.c|
+            docs/software/modules/driver/contactor/contactor_how-to\.h|
+            docs/software/modules/engine/database/database_how-to\.c|
+            docs/software/modules/task/ftask/ftask_how-to\.c|
+            docs/software/unit-tests/abc\.c|
+            docs/software/unit-tests/abc\.c|
+            docs/software/unit-tests/abc\.h|
+            docs/software/unit-tests/run_abc\.c|
+            src/.*|
+            tests/c-std/c-std-test\.c|
+            tests/cli/pre_commit_scripts/test_check_license_info/invalid-license\.c|
+            tests/cli/pre_commit_scripts/test_check_license_info/no-license\.c|
+            tests/cli/pre_commit_scripts/test_check_cpp_style_comment/cpp-style-comment_[0|1|2|3]\.c|
+            tests/cli/pre_commit_scripts/test_check_cpp_style_comment/no-cpp-style-comment(-link)?\.c|
+            tests/cli/pre_commit_scripts/test_check_doxygen/.*|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file_empty\.h|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file_invalid_content\.h|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file\.c|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file_multiple\.h|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file_valid\.h|
+            tests/cli/pre_commit_scripts/test_check_sections/valid-sections-src\.[c|h]|
+            tests/cli/pre_commit_scripts/test_file_empty\.h|
+            tests/cli/pre_commit_scripts/test_file_invalid_content\.h|
+            tests/cli/pre_commit_scripts/test_file\.c|
+            tests/cli/pre_commit_scripts/test_file_multiple\.h|
+            tests/cli/pre_commit_scripts/test_file_valid\.h|
+            tests/cli/pre_commit_scripts/test_check_license_info/valid-license\.c|
+            tests/cli/pre_commit_scripts/test_check_sections/invalid-sections-test-\d\.[c|h]|
+            tests/unit/app/application/config/battery_cell_cfg\.[c|h]|
+            tests/unit/app/engine/config/diag_array_cfg\.c|
+            tests/unit/app/driver/afe/adi/common/ades183x.*|
+            tests/unit-hw/.*|
+            tests/waf_tools/fixtures/.*/expected-.*\.[c|h]|
+            tools/crc/crc-10_0x48f\.c|
+            tools/crc/crc-15_0xc599\.c
+          )$
+      - id: check-doxygen-comments
+        name: check doxygen comment
+        language: system
+        entry: python cli/pre_commit_scripts/check_doxygen.py
+        types: [c]
+        exclude: |
+          (?x)^(
+            conf/bms/templates/battery_.*_template\.[c|h]|
+            conf/bms/templates/diag_array_cfg_template\.c|
+            conf/tpl/c\.[c|h]|
+            src/app/driver/afe/nxp/(common/)?mc3377.*/vendor/.*|
+            src/app/driver/emac/.*|
+            src/app/driver/sbc/fs8x_driver/.*|
+            src/bootloader/driver/crc/vendor/crc64_calc\.[c|h]|
+            tests/cli/pre_commit_scripts/test_check_cpp_style_comment/cpp-style-comment_[0|1|2|3]\.c|
+            tests/cli/pre_commit_scripts/test_check_cpp_style_comment/no-cpp-style-comment(-link)?\.c|
+            tests/cli/pre_commit_scripts/test_check_doxygen.*|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file_empty\.h|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file_invalid_content\.h|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file\.c|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file_multiple\.h|
+            tests/cli/pre_commit_scripts/test_check_include_guard/test_file_valid\.h
+          )$
+      - id: check-comment-style
+        name: check C comment style
+        language: system
+        entry: python cli/pre_commit_scripts/check_cpp_style_comment.py
+        types: [c]
+        exclude: |
+          (?x)^(
+            tests/cli/pre_commit_scripts/test_check_cpp_style_comment/cpp-style-comment_[0|1|2|3]\.c|
+            tests/cli/pre_commit_scripts/test_check_doxygen/invalid-encoding_utf-16\.c
+          )$
+      - id: check-rst-macro-usage
+        name: check rst macro usage
+        language: system
+        entry: python cli/pre_commit_scripts/check_rst_macros.py
+        types: [rst]
+        exclude: |
+          (?x)^(
+            tests/cli/pre_commit_scripts/test_check_rst_macros/.*\.rst
+          )$
+      - id: check-test-files
+        name: check for test files
+        language: system
+        entry: python cli/pre_commit_scripts/check_test_files.py
+        types_or: [c, python]
+        exclude: |
+          (?x)^(
+            src/app/driver/sbc/fs8x_driver/.*|
+            src/app/driver/afe/nxp/common/mc3377x/vendor/.*|
+            src/app/driver/afe/nxp/mc3377.*/vendor/.*|
+            src/os/.*|
+            tests/cli/__init__\.py|
+            tests/cli/.*/__init__\.py|
+            tests/cli/pre_commit_scripts/test_check_license_info/valid-license\.py|
+            tests/cli/cmd_gui/tk_helpers\.py|
+            tests/unit/support/.*
+          )$
+      - id: sort-test-config-lists
+        name: sort test configuration lists
+        language: system
+        entry: python cli/pre_commit_scripts/sort_test_config_lists.py
+        types: [json]
+        args: [--fix]
+        files: ^tests/unit/.*\.json$
+      - id: sort-include-lists
+        name: sort wscript include lists
+        language: system
+        entry: python cli/pre_commit_scripts/sort_include_lists.py
+        types: [text]
+        args: [--fix]
+        files: (^|/)wscript$
+      - id: obsolete-macros
+        name: check obsolete macros
+        entry: '(TEST_INCLUDE_PATH|TEST_SOURCE_FILE)'
+        language: pygrep
+        types: [c]
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        args: [--enable=require-variable-braces]
+  - repo: https://github.com/citation-file-format/cffconvert
+    rev: b6045d78aac9e02b039703b030588d54d53262ac
+    hooks:
+      - id: validate-cff
+  - repo: https://github.com/tox-dev/pyproject-fmt
+    rev: "v2.25.1"
+    hooks:
+      - id: pyproject-fmt
+  - repo: https://github.com/jackdewinter/pymarkdown
+    rev: v0.9.39
+    hooks:
+      - id: pymarkdown
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+      - id: python-check-blanket-noqa
+      - id: python-check-blanket-type-ignore
+      - id: python-check-mock-methods
+      - id: python-no-eval
+      - id: python-no-log-warn
+        exclude: |
+          (?x)^(
+            .*wscript|
+            tools/waf_tools/.*
+          )$
+      - id: python-use-type-annotations
+      - id: rst-backticks
+      - id: rst-directive-colons
+      - id: rst-inline-touching-normal
+      - id: text-unicode-replacement-char
+  - repo: https://github.com/streetsidesoftware/cspell-cli
+    rev: v10.0.1
+    hooks:
+      - id: cspell
+        args:
+          - --no-config-search
+          - --no-must-find-files
+          - --no-progress
+          - --no-summary
+          - --gitignore
+          - --report
+          - all
+          - --files # this needs to be the last argument so that the paths are passed correctly.

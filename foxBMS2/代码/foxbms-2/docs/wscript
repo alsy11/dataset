@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2010 - 2026, Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V.
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# We kindly request you to use one or more of the following phrases to refer to
+# foxBMS in your hardware, software, documentation or advertising materials:
+#
+# - "This product uses parts of foxBMS®"
+# - "This product includes parts of foxBMS®"
+# - "This product is derived from foxBMS®"
+
+import battery_system_config_validate
+import diag_array_config_validate
+from waflib.Build import POST_LAZY, BuildContext
+
+
+def build(bld: BuildContext):
+    cp = f"{bld.env.APPNAME.lower()}-config-"
+
+    if bld.variant in {"docs", "app_doxygen"}:
+        source = "battery_system_cfg"
+        bld(
+            features="codegen_config",
+            json=bld.srcnode.find_node(f"conf/bms/{source}.json"),
+            validator=battery_system_config_validate.validate_battery_system_configuration,
+            export_includes=[bld.bldnode.find_or_declare("src/app/application/config")],
+            target=f"{cp}{source}",
+        )
+
+        source = "diag_array_cfg"
+        bld(
+            features="codegen_config",
+            json=bld.srcnode.find_node(f"conf/bms/{source}.json"),
+            validator=diag_array_config_validate.validate_diag_array_configuration,
+            export_includes=[bld.bldnode.find_or_declare("src/app/engine/config")],
+            target=f"{cp}{source}",
+        )
+
+    if bld.variant == "docs":
+        # C source code examples that should build
+        if bld.env.CC:
+            bld.recurse(
+                [
+                    "../tools/crc",
+                    "developer-manual/style-guide/examples",
+                    "developer-manual/style-guide/state-machine-example",
+                    "software/configuration",
+                    "software/modules/driver/can",
+                    "software/modules/engine/database",
+                    "software/modules/task/ftask",
+                    "software/unit-tests",
+                    "system",
+                ],
+            )
+
+        bld(source=bld.path.ant_glob("**/*.drawio"))
+        config = bld.path.find_node("conf.py")
+        bld(
+            features="sphinx",
+            builders="html",
+            out_dir=".",
+            conf_py=config,
+            version=bld.env.VERSION,
+            project=bld.env.APPNAME,
+        )
+        bld.post_mode = POST_LAZY
+
+    elif "doxygen" in bld.variant:
+        feature = "doxygen"
+        common_input = {
+            "doxygen_conf": "doxygen.conf.in",
+            "project_number": f"{bld.env.APPNAME} - {bld.env.VERSION}",
+            "project_logo": "_static/foxbms250px.png",
+            "layout_file": "doxygen_layout.xml",
+            "image_path": "_static/cc.large.png",
+            "html_footer": "doxygen_footer.html",
+            "html_stylesheet": "style-sheet-file.css",
+            "html_extra_files": "_static/cc.large.png",
+            "dot_path": bld.env.DOT[0],
+        }
+        specific_input = {}
+        base_name = '"%s Battery Management System %s API Documentation"'
+
+        if bld.variant == "app_doxygen":
+            specific_input = {
+                "project_brief": base_name % (bld.env.APPNAME, "Application"),
+                "project_name": f"{bld.env.APPNAME} Application",
+                "input": (
+                    "developer-manual/style-guide/state-machine-example "
+                    f"../src/app ../build/{bld.variant}/src/app/application/config"
+                ),
+                "exclude_patterns": "*/vendor/*",
+            }
+        elif bld.variant == "app_unit_test_doxygen":
+            specific_input = {
+                "project_brief": base_name % (bld.env.APPNAME, "Application Unit Test"),
+                "project_name": f"{bld.env.APPNAME} Application",
+                "input": "../src/app ../tests/unit/app",
+                "exclude": "../src/app/doxygen_app.h",
+                "exclude_patterns": "*/vendor/*",
+                "predefined": "UNITY_UNIT_TEST=1",
+            }
+        elif bld.variant == "bootloader_doxygen":
+            specific_input = {
+                "project_brief": base_name % (bld.env.APPNAME, "Bootloader"),
+                "project_name": f"{bld.env.APPNAME} Bootloader",
+                "input": "../src/bootloader",
+                "exclude_patterns": "*/vendor/*",
+            }
+        elif bld.variant == "bootloader_unit_test_doxygen":
+            specific_input = {
+                "project_brief": base_name % (bld.env.APPNAME, "Bootloader Unit Test"),
+                "project_name": f"{bld.env.APPNAME} Bootloader",
+                "input": "../src/bootloader ../tests/unit/bootloader",
+                "exclude": "../src/bootloader/doxygen_bootloader.h",
+                "exclude_patterns": "*/vendor/*",
+                "predefined": "UNITY_UNIT_TEST=1",
+            }
+        bld(features=feature, **common_input, **specific_input)

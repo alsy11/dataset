@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2010 - 2026, Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V.
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# We kindly request you to use one or more of the following phrases to refer to
+# foxBMS in your hardware, software, documentation or advertising materials:
+#
+# - "This product uses parts of foxBMS®"
+# - "This product includes parts of foxBMS®"
+# - "This product is derived from foxBMS®"
+
+# This script defines how to configure and build the project.
+# This includes configuration the toolchain for building foxBMS binaries, the
+# documentation and running various checks on the source files.
+
+
+from waflib import Utils
+from waflib.Build import BuildContext
+
+
+def build(bld: BuildContext) -> None:
+    var = bld.variant.split("_", maxsplit=1)[0]
+    bld.env.append_unique("HAL_DIR", f"tests/unit/{var}/hal/include")
+    bld.recurse(var)
+
+    bld.load_test_configs()
+    bld.validate_test_configuration()
+    for i, cfg in enumerate(bld.test_configs):
+        bld(
+            features=cfg["features"],
+            target=cfg["target"],
+            source=cfg["source"],
+            includes=cfg["includes"],
+            mocks=cfg["mocks"],
+            use=cfg["use"] + ["test-framework", f"{var}-c-test-constants"],
+            uselib=["COVERAGE"],
+            defines=cfg["defines"],
+            cflags=cfg["cflags"],
+            path=cfg["path"],
+            idx=i,
+        )
+
+    bld.objects(
+        source=[
+            bld.srcnode.find_node("tools/cmock/vendor/unity/src/unity.c"),
+            bld.srcnode.find_node("tools/cmock/src/cmock.c"),
+            bld.srcnode.find_node("tools/cmock/vendor/c_exception/lib/CException.c"),
+            bld.srcnode.find_node("tests/unit/support/struct_helper.c"),
+            bld.srcnode.find_node("tests/unit/support/test_fake_functions.c"),
+        ],
+        includes=[
+            bld.srcnode.find_node("tools/cmock/vendor/unity/src"),
+            bld.srcnode.find_node("tools/cmock/src"),
+            bld.srcnode.find_node("tests/unit/support"),
+        ],
+        export_includes=[
+            bld.srcnode.find_node("tools/cmock/src"),
+            bld.srcnode.find_node("tools/cmock/vendor/unity/src"),
+            bld.srcnode.find_node("tools/cmock/vendor/c_exception/lib"),
+        ],
+        defines=[
+            "UNITY_UNIT_TEST",
+            "FAS_ASSERT_LEVEL=2",
+            "UNITY_INCLUDE_EXEC_TIME",
+            "UNITY_USE_FLUSH_STDOUT",
+        ],
+        use=f"{bld.env.APPNAME.lower()}-hal",
+        target="test-framework",
+    )
+    if not Utils.is_win32:
+        t = bld.get_tgen_by_name("test-framework")  # cspell:ignore tgen
+        t.defines.append("_POSIX_C_SOURCE=200809L")

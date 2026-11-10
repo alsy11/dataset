@@ -1,0 +1,5 @@
+Rule            ; Link                              ; Automated Check
+SHELL:001       ; :ref:`rule_shell_filenames`       ; No
+SHELL:002       ; :ref:`rule_shell_header`          ; Yes
+POWERSHELL:001  ; :ref:`rule_powershell_filenames`  ; Yes
+POWERSHELL:002  ; :ref:`rule_powershell_header`     ; Yes

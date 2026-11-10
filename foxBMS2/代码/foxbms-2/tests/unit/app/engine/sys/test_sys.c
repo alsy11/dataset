@@ -1,0 +1,1232 @@
+/**
+ *
+ * @copyright &copy; 2010 - 2026, Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V.
+ * All rights reserved.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * We kindly request you to use one or more of the following phrases to refer to
+ * foxBMS in your hardware, software, documentation or advertising materials:
+ *
+ * - "This product uses parts of foxBMS&reg;"
+ * - "This product includes parts of foxBMS&reg;"
+ * - "This product is derived from foxBMS&reg;"
+ *
+ */
+
+/**
+ * @file    test_sys.c
+ * @author  foxBMS Team
+ * @date    2020-04-02 (date of creation)
+ * @updated 2026-10-06 (date of last update)
+ * @version v1.12.0
+ * @ingroup UNIT_TEST_IMPLEMENTATION
+ * @prefix  TEST
+ *
+ * @brief   Tests for the sys module
+ * @details Test functions:
+ *          - testSYS_GeneralMacroBist
+ *          - testSYS_Trigger
+ *
+ */
+
+/*========== Includes =======================================================*/
+#include "unity.h"
+#include "Mockafe.h"
+#include "Mockalgorithm.h"
+#include "Mockbal.h"
+#include "Mockbms.h"
+#include "Mockcan.h"
+#include "Mockcontactor.h"
+#include "Mockdatabase.h"
+#include "Mockdiag.h"
+#include "Mockfassert.h"
+#include "Mockfram.h"
+#include "Mockimd.h"
+#include "Mockinterlock.h"
+#include "Mockmeas.h"
+#include "Mockos.h"
+#include "Mockrtc.h"
+#include "Mocksbc.h"
+#include "Mocksof_trapezoid.h"
+#include "Mockstate_estimation.h"
+#include "Mocksys_cfg.h"
+
+#include "fram_cfg.h"
+
+#include "sys.h"
+#include "test_assert_helper.h"
+
+/*========== Unit Testing Framework Directives ==============================*/
+
+/*========== Definitions and Implementations for Unit Test ==================*/
+SBC_STATE_s sbc_stateMcuSupervisor;
+
+/*========== Setup and Teardown =============================================*/
+void setUp(void) {
+}
+
+void tearDown(void) {
+}
+
+/*========== Test Cases =====================================================*/
+void testSYS_RunStateMachine(void) {
+    SYS_STATE_s sys_state  = {0};
+    sys_state.currentState = SYS_FSM_STATE_UNINITIALIZED;
+
+    /* Test State Machine naturally, without special input */
+    /* state SYS_STATEMACH_UNINITIALIZED */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    SYS_SetStateRequest(SYS_STATE_INITIALIZATION_REQUEST);
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    TEST_SYS_RunStateMachine(&sys_state);
+
+    /* state SYS_FSM_STATE_INITIALIZATION, substate SYS_FSM_SUBSTATE_ENTRY */
+    TEST_SYS_RunStateMachine(&sys_state);
+
+    /* substate SYS_FSM_CHECK_NON_VOLATILE_STORAGE */
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_DEEP_DISCHARGE_FLAG, FRAM_ACCESS_OK);
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_FRAM_CALIBRATION, FRAM_ACCESS_OK);
+
+    TEST_SYS_RunStateMachine(&sys_state);
+
+    /* state SYS_FSM_STATE_INITIALIZATION, substate SYS_FSM_SUBSTATE_START_INITIALIZATION_SBC */
+    SBC_SetStateRequest_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATE_INIT_REQUEST, SBC_OK);
+    TEST_SYS_RunStateMachine(&sys_state);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_SBC */
+    SBC_GetState_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATEMACHINE_RUNNING);
+    TEST_SYS_RunStateMachine(&sys_state);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZATION_CAN */
+    CAN_Initialize_Expect();
+    TEST_SYS_RunStateMachine(&sys_state);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZE_RTC */
+    RTC_IsRtcModuleInitialized_ExpectAndReturn(false);
+    TEST_SYS_RunStateMachine(&sys_state);
+    RTC_IsRtcModuleInitialized_ExpectAndReturn(true);
+    TEST_SYS_RunStateMachine(&sys_state);
+
+    /* substate SYS_FSM_SUBSTATE_START_UP_BIST */
+    DATA_ExecuteDataBist_Expect();
+    TEST_SYS_RunStateMachine(&sys_state);
+
+    /* substate SYS_FSM_SUBSTATE_SEND_BOOT_MESSAGE */
+    SYS_SendBootMessage_Expect();
+    TEST_SYS_RunStateMachine(&sys_state);
+
+    /* state SYS_FSM_STATE_PRE_RUNNING substate SYS_FSM_SUBSTATE_ENTRY */
+    TEST_SYS_RunStateMachine(&sys_state);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZE_INTERLOCK*/
+    ILCK_SetStateRequest_ExpectAndReturn(ILCK_STATE_INITIALIZATION_REQUEST, ILCK_OK);
+    TEST_SYS_RunStateMachine(&sys_state);
+
+    /* substate SYS_FSM_SUBSTATE_START_INITIALIZATION_BAL */
+    BAL_SetStateRequest_ExpectAndReturn(BAL_STATE_INIT_REQUEST, BAL_OK);
+    TEST_SYS_RunStateMachine(&sys_state);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_BAL */
+    BAL_GetInitializationState_ExpectAndReturn(STD_OK);
+    TEST_SYS_RunStateMachine(&sys_state);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_BAL_GLOBAL_ENABLE */
+    BAL_SetStateRequest_ExpectAndReturn(BAL_STATE_GLOBAL_DISABLE_REQUEST, BAL_OK);
+    TEST_SYS_RunStateMachine(&sys_state);
+
+    /* substate SYS_FSM_SUBSTATE_START_FIRST_MEASUREMENT_CYCLE */
+    MEAS_StartMeasurement_ExpectAndReturn(STD_OK);
+    TEST_SYS_RunStateMachine(&sys_state);
+    /* substate SYS_FSM_SUBSTATE_WAIT_FIRST_MEASUREMENT_CYCLE */
+    MEAS_IsFirstMeasurementCycleFinished_ExpectAndReturn(true);
+    ALGO_UnlockInitialization_Expect();
+    TEST_SYS_RunStateMachine(&sys_state);
+
+    /* substate SYS_FSM_SUBSTATE_START_CURRENT_SENSOR_PRESENCE_CHECK*/
+    CAN_EnablePeriodic_Expect(true);
+    TEST_SYS_RunStateMachine(&sys_state);
+    /* substate SYS_FSM_SUBSTATE_WAIT_CURRENT_SENSOR_PRESENCE_CHECK*/
+    for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
+        CAN_IsCurrentSensorPresent_ExpectAndReturn(s, true);
+        CAN_IsCurrentSensorCcPresent_ExpectAndReturn(s, true);
+        SE_InitializeSoc_Expect(true, s);
+        CAN_IsCurrentSensorEcPresent_ExpectAndReturn(s, true);
+        SE_InitializeSoe_Expect(true, s);
+        SE_InitializeSoh_Expect(s);
+    }
+    SOF_Init_Expect();
+    TEST_SYS_RunStateMachine(&sys_state);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZATION_MISC */
+    TEST_SYS_RunStateMachine(&sys_state);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZATION_IMD */
+    IMD_RequestInitialization_ExpectAndReturn(IMD_REQUEST_OK);
+    TEST_SYS_RunStateMachine(&sys_state);
+
+    /* substate SYS_FSM_SUBSTATE_START_INITIALIZATION_BMS */
+    BMS_SetStateRequest_ExpectAndReturn(BMS_STATE_INITIALIZATION_REQUEST, BMS_OK);
+    TEST_SYS_RunStateMachine(&sys_state);
+
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_BMS */
+    BMS_GetInitializationState_ExpectAndReturn(STD_OK);
+    TEST_SYS_RunStateMachine(&sys_state);
+
+    /* state SYS_FSM_STATE_RUNNING */
+    TEST_SYS_RunStateMachine(&sys_state);
+}
+
+/**
+ * @brief   Testing state machine behaviour when inducing errors
+ * @details The following cases need to be tested:
+ *          - Argument validation:
+ *            - None
+ *          - Routine validation:
+ *            - RT1/8: Error in SBC Initialization
+ *            - RT2/8: Error in Balancing Initialization
+ *            - RT3/8: Error in Global Balancing Initialization
+ *            - RT4/8: Error in Balancing
+ *            - RT5/8: Error in current sensor presence check
+ *            - RT6/8: Error in IMD Entry
+ *            - RT7/8: Error in IMD Initialization
+ *            - RT8/8: Error in BMS Initialization
+ */
+
+void testSYS_RunStateMachineErrorState(void) {
+    /* ======= Routine tests =============================================== */
+    SYS_STATE_s sys_stateSbcError  = {0};
+    sys_stateSbcError.currentState = SYS_FSM_STATE_UNINITIALIZED;
+
+    /* ======= RT1/8: Test implementation: Error in SBC Initialization */
+    /* state SYS_FSM_STATE_UNINITIALIZED */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    SYS_SetStateRequest(SYS_STATE_INITIALIZATION_REQUEST);
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateSbcError);
+
+    /* state SYS_FSM_STATE_INITIALIZATION, substate SYS_ENTRY */
+    TEST_SYS_RunStateMachine(&sys_stateSbcError);
+
+    /* substate SYS_FSM_CHECK_NON_VOLATILE_STORAGE */
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_DEEP_DISCHARGE_FLAG, FRAM_ACCESS_OK);
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_FRAM_CALIBRATION, FRAM_ACCESS_OK);
+
+    TEST_SYS_RunStateMachine(&sys_stateSbcError);
+
+    /* substate SYS_ENTRY */
+    SBC_SetStateRequest_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATE_INIT_REQUEST, SBC_OK);
+    TEST_SYS_RunStateMachine(&sys_stateSbcError);
+    /* substate SYS_FSM_SUBSTATE_START_INITIALIZATION_SBC */
+    for (uint16_t i = 0; i < (SYS_STATE_MACHINE_SBC_INIT_TIMEOUT_MS / SYS_TASK_CYCLE_CONTEXT_MS) + 2; i++) {
+        SBC_GetState_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATEMACHINE_ERROR);
+        TEST_SYS_RunStateMachine(&sys_stateSbcError);
+    }
+    /* state SYS_STATEMACH_ERROR */
+    TEST_SYS_RunStateMachine(&sys_stateSbcError);
+
+    /* ======= RT2/8: Test implementation: Error in Balancing Initialization */
+    SYS_STATE_s sys_stateBalancingError  = {0};
+    sys_stateBalancingError.currentState = SYS_FSM_STATE_UNINITIALIZED;
+    /* state SYS_FSM_STATE_UNINITIALIZED */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    SYS_SetStateRequest(SYS_STATE_INITIALIZATION_REQUEST);
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateBalancingError);
+
+    /* state SYS_FSM_STATE_INITIALIZATION */
+    TEST_SYS_RunStateMachine(&sys_stateBalancingError);
+
+    /* substate SYS_FSM_CHECK_NON_VOLATILE_STORAGE */
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_DEEP_DISCHARGE_FLAG, FRAM_ACCESS_OK);
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_FRAM_CALIBRATION, FRAM_ACCESS_OK);
+
+    TEST_SYS_RunStateMachine(&sys_stateBalancingError);
+
+    /* substate SYS_FSM_SUBSTATE_START_INITIALIZATION_SBC */
+    SBC_SetStateRequest_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATE_INIT_REQUEST, SBC_OK);
+    TEST_SYS_RunStateMachine(&sys_stateBalancingError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_SBC */
+    SBC_GetState_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATEMACHINE_RUNNING);
+    TEST_SYS_RunStateMachine(&sys_stateBalancingError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZATION_CAN */
+    CAN_Initialize_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateBalancingError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZE_RTC */
+    RTC_IsRtcModuleInitialized_ExpectAndReturn(true);
+    TEST_SYS_RunStateMachine(&sys_stateBalancingError);
+
+    /* substate SYS_FSM_SUBSTATE_SYSTEM_BIST */
+    DATA_ExecuteDataBist_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateBalancingError);
+
+    /* substate SYS_FSM_SUBSTATE_SEND_BOOT_MESSAGE */
+    SYS_SendBootMessage_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateBalancingError);
+
+    /* state SYS_FSM_STATE_PRE_RUNNING */
+    ILCK_SetStateRequest_ExpectAndReturn(ILCK_STATE_INITIALIZATION_REQUEST, ILCK_OK);
+    TEST_SYS_RunStateMachine(&sys_stateBalancingError);
+
+    /* substate SYS_FSM_SUBSTATE_START_INITIALIZATION_BAL */
+    BAL_SetStateRequest_ExpectAndReturn(BAL_STATE_INIT_REQUEST, BAL_OK);
+    TEST_SYS_RunStateMachine(&sys_stateBalancingError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_BAL */
+    for (uint16_t i = 0; i < (SYS_STATE_MACHINE_BAL_INITIALIZATION_TIMEOUT_MS / SYS_TASK_CYCLE_CONTEXT_MS) + 2; i++) {
+        BAL_GetInitializationState_ExpectAndReturn(STD_NOT_OK);
+        TEST_SYS_RunStateMachine(&sys_stateBalancingError);
+    }
+    /* state SYS_FSM_STATE_ERROR */
+    TEST_SYS_RunStateMachine(&sys_stateBalancingError);
+
+    /* ======= RT3/8: Test implementation: Error in Global Balancing Initialization */
+    SYS_STATE_s sys_stateGlobalBalancingError  = {0};
+    sys_stateGlobalBalancingError.currentState = SYS_FSM_STATE_UNINITIALIZED;
+    /* state SYS_FSM_STATE_UNINITIALIZED */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    SYS_SetStateRequest(SYS_STATE_INITIALIZATION_REQUEST);
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateGlobalBalancingError);
+
+    /* state SYS_FSM_STATE_INITIALIZATION */
+    TEST_SYS_RunStateMachine(&sys_stateGlobalBalancingError);
+
+    /* substate SYS_FSM_CHECK_NON_VOLATILE_STORAGE */
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_DEEP_DISCHARGE_FLAG, FRAM_ACCESS_OK);
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_FRAM_CALIBRATION, FRAM_ACCESS_OK);
+
+    TEST_SYS_RunStateMachine(&sys_stateGlobalBalancingError);
+
+    /* substate SYS_FSM_SUBSTATE_START_INITIALIZATION_SBC */
+    SBC_SetStateRequest_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATE_INIT_REQUEST, SBC_OK);
+    TEST_SYS_RunStateMachine(&sys_stateGlobalBalancingError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_SBC */
+    SBC_GetState_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATEMACHINE_RUNNING);
+    TEST_SYS_RunStateMachine(&sys_stateGlobalBalancingError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZATION_CAN */
+    CAN_Initialize_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateGlobalBalancingError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZE_RTC */
+    RTC_IsRtcModuleInitialized_ExpectAndReturn(true);
+    TEST_SYS_RunStateMachine(&sys_stateGlobalBalancingError);
+
+    /* substate SYS_FSM_SUBSTATE_SYSTEM_BIST */
+    DATA_ExecuteDataBist_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateGlobalBalancingError);
+
+    /* substate SYS_FSM_SUBSTATE_SEND_BOOT_MESSAGE */
+    SYS_SendBootMessage_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateGlobalBalancingError);
+
+    /* state SYS_FSM_STATE_PRE_RUNNING */
+    ILCK_SetStateRequest_ExpectAndReturn(ILCK_STATE_INITIALIZATION_REQUEST, ILCK_OK);
+    TEST_SYS_RunStateMachine(&sys_stateGlobalBalancingError);
+
+    /* substate SYS_FSM_SUBSTATE_START_INITIALIZATION_BAL */
+    BAL_SetStateRequest_ExpectAndReturn(BAL_STATE_INIT_REQUEST, BAL_OK);
+    TEST_SYS_RunStateMachine(&sys_stateGlobalBalancingError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_BAL */
+    BAL_GetInitializationState_ExpectAndReturn(STD_OK);
+    TEST_SYS_RunStateMachine(&sys_stateGlobalBalancingError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_BAL_GLOBAL_ENABLE */
+    for (uint16_t i = 0; i < (SYS_STATE_MACHINE_INITIALIZATION_TIMEOUT_MS / SYS_TASK_CYCLE_CONTEXT_MS) + 2; i++) {
+        BAL_SetStateRequest_ExpectAndReturn(BAL_STATE_GLOBAL_DISABLE_REQUEST, BAL_BUSY_OK);
+        TEST_SYS_RunStateMachine(&sys_stateGlobalBalancingError);
+    }
+    /* state SYS_FSM_STATE_ERROR */
+    TEST_SYS_RunStateMachine(&sys_stateGlobalBalancingError);
+
+    /* ======= RT4/8: Test implementation: Error in Balancing */
+    SYS_STATE_s sys_stateFirstMeasurementError  = {0};
+    sys_stateFirstMeasurementError.currentState = SYS_FSM_STATE_UNINITIALIZED;
+    /* state SYS_FSM_STATE_UNINITIALIZED */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    SYS_SetStateRequest(SYS_STATE_INITIALIZATION_REQUEST);
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateFirstMeasurementError);
+
+    /* state SYS_FSM_STATE_INITIALIZATION */
+    TEST_SYS_RunStateMachine(&sys_stateFirstMeasurementError);
+
+    /* substate SYS_FSM_CHECK_NON_VOLATILE_STORAGE */
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_DEEP_DISCHARGE_FLAG, FRAM_ACCESS_OK);
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_FRAM_CALIBRATION, FRAM_ACCESS_OK);
+
+    TEST_SYS_RunStateMachine(&sys_stateFirstMeasurementError);
+
+    /* substate SYS_FSM_SUBSTATE_START_INITIALIZATION_SBC */
+    SBC_SetStateRequest_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATE_INIT_REQUEST, SBC_OK);
+    TEST_SYS_RunStateMachine(&sys_stateFirstMeasurementError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_SBC */
+    SBC_GetState_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATEMACHINE_RUNNING);
+    TEST_SYS_RunStateMachine(&sys_stateFirstMeasurementError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZATION_CAN */
+    CAN_Initialize_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateFirstMeasurementError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZE_RTC */
+    RTC_IsRtcModuleInitialized_ExpectAndReturn(true);
+    TEST_SYS_RunStateMachine(&sys_stateFirstMeasurementError);
+
+    /* substate SYS_FSM_SUBSTATE_SYSTEM_BIST */
+    DATA_ExecuteDataBist_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateFirstMeasurementError);
+
+    /* substate SYS_FSM_SUBSTATE_SEND_BOOT_MESSAGE */
+    SYS_SendBootMessage_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateFirstMeasurementError);
+
+    /* state SYS_FSM_STATE_PRE_RUNNING */
+    ILCK_SetStateRequest_ExpectAndReturn(ILCK_STATE_INITIALIZATION_REQUEST, ILCK_OK);
+    TEST_SYS_RunStateMachine(&sys_stateFirstMeasurementError);
+
+    /* substate SYS_FSM_SUBSTATE_START_INITIALIZATION_BAL */
+    BAL_SetStateRequest_ExpectAndReturn(BAL_STATE_INIT_REQUEST, BAL_OK);
+    TEST_SYS_RunStateMachine(&sys_stateFirstMeasurementError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_BAL */
+    BAL_GetInitializationState_ExpectAndReturn(STD_OK);
+    TEST_SYS_RunStateMachine(&sys_stateFirstMeasurementError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_BAL_GLOBAL_ENABLE */
+    BAL_SetStateRequest_ExpectAndReturn(BAL_STATE_GLOBAL_DISABLE_REQUEST, BAL_OK);
+    TEST_SYS_RunStateMachine(&sys_stateFirstMeasurementError);
+
+    /* substate SYS_FSM_SUBSTATE_START_FIRST_MEASUREMENT_CYCLE */
+    MEAS_StartMeasurement_ExpectAndReturn(STD_OK);
+    TEST_SYS_RunStateMachine(&sys_stateFirstMeasurementError);
+    /* substate SYS_WAIT_FIRST_MEASUREMENT_CYCLE */
+    for (uint16_t i = 0; i < (SYS_STATE_MACHINE_INITIALIZATION_TIMEOUT_MS / SYS_TASK_CYCLE_CONTEXT_MS) + 2; i++) {
+        MEAS_IsFirstMeasurementCycleFinished_ExpectAndReturn(false);
+        TEST_SYS_RunStateMachine(&sys_stateFirstMeasurementError);
+    }
+
+    /* state SYS_FSM_STATE_ERROR */
+    TEST_SYS_RunStateMachine(&sys_stateFirstMeasurementError);
+
+    /* ======= RT5/8: Test implementation: Error in BMS Initialization */
+    SYS_STATE_s sys_stateCurrentSensorError  = {0};
+    sys_stateCurrentSensorError.currentState = SYS_FSM_STATE_UNINITIALIZED;
+    /* state SYS_FSM_STATE_UNINITIALIZED */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    SYS_SetStateRequest(SYS_STATE_INITIALIZATION_REQUEST);
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateCurrentSensorError);
+
+    /* state SYS_FSM_STATE_INITIALIZATION */
+    TEST_SYS_RunStateMachine(&sys_stateCurrentSensorError);
+
+    /* substate SYS_FSM_CHECK_NON_VOLATILE_STORAGE */
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_DEEP_DISCHARGE_FLAG, FRAM_ACCESS_OK);
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_FRAM_CALIBRATION, FRAM_ACCESS_OK);
+
+    TEST_SYS_RunStateMachine(&sys_stateCurrentSensorError);
+
+    /* substate SYS_FSM_SUBSTATE_START_INITIALIZATION_SBC */
+    SBC_SetStateRequest_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATE_INIT_REQUEST, SBC_OK);
+    TEST_SYS_RunStateMachine(&sys_stateCurrentSensorError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_SBC */
+    SBC_GetState_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATEMACHINE_RUNNING);
+    TEST_SYS_RunStateMachine(&sys_stateCurrentSensorError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZATION_CAN */
+    CAN_Initialize_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateCurrentSensorError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZE_RTC */
+    RTC_IsRtcModuleInitialized_ExpectAndReturn(true);
+    TEST_SYS_RunStateMachine(&sys_stateCurrentSensorError);
+
+    /* substate SYS_FSM_SUBSTATE_SYSTEM_BIST */
+    DATA_ExecuteDataBist_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateCurrentSensorError);
+
+    /* substate SYS_FSM_SUBSTATE_SEND_BOOT_MESSAGE */
+    SYS_SendBootMessage_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateCurrentSensorError);
+
+    /* state SYS_FSM_STATE_PRE_RUNNING */
+    ILCK_SetStateRequest_ExpectAndReturn(ILCK_STATE_INITIALIZATION_REQUEST, ILCK_OK);
+    TEST_SYS_RunStateMachine(&sys_stateCurrentSensorError);
+
+    /* substate SYS_FSM_SUBSTATE_START_INITIALIZATION_BAL */
+    BAL_SetStateRequest_ExpectAndReturn(BAL_STATE_INIT_REQUEST, BAL_OK);
+    TEST_SYS_RunStateMachine(&sys_stateCurrentSensorError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_BAL */
+    BAL_GetInitializationState_ExpectAndReturn(STD_OK);
+    TEST_SYS_RunStateMachine(&sys_stateCurrentSensorError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_BAL_GLOBAL_ENABLE */
+    BAL_SetStateRequest_ExpectAndReturn(BAL_STATE_GLOBAL_DISABLE_REQUEST, BAL_OK);
+    TEST_SYS_RunStateMachine(&sys_stateCurrentSensorError);
+
+    /* substate SYS_FSM_SUBSTATE_START_FIRST_MEASUREMENT_CYCLE */
+    MEAS_StartMeasurement_ExpectAndReturn(STD_OK);
+    TEST_SYS_RunStateMachine(&sys_stateCurrentSensorError);
+    /* substate SYS_WAIT_FIRST_MEASUREMENT_CYCLE */
+    MEAS_IsFirstMeasurementCycleFinished_ExpectAndReturn(true);
+    ALGO_UnlockInitialization_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateCurrentSensorError);
+
+    /* substate SYS_FSM_SUBSTATE_START_CURRENT_SENSOR_PRESENCE_CHECK*/
+    CAN_EnablePeriodic_Expect(true);
+    TEST_SYS_RunStateMachine(&sys_stateCurrentSensorError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_CURRENT_SENSOR_PRESENCE_CHECK*/
+    for (uint16_t i = 0; i < (SYS_STATE_MACHINE_INITIALIZATION_TIMEOUT_MS / SYS_TASK_CYCLE_CONTEXT_MS) + 2; i++) {
+        for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
+            CAN_IsCurrentSensorPresent_ExpectAndReturn(s, false);
+        }
+        TEST_SYS_RunStateMachine(&sys_stateCurrentSensorError);
+    }
+
+    /* state SYS_FSM_STATE_ERROR */
+    TEST_SYS_RunStateMachine(&sys_stateCurrentSensorError);
+
+    /* ======= RT6/8: Test implementation: Error in IMD Entry */
+    SYS_STATE_s sys_stateImdError  = {0};
+    sys_stateImdError.currentState = SYS_FSM_STATE_UNINITIALIZED;
+    /* state SYS_FSM_STATE_UNINITIALIZED */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    SYS_SetStateRequest(SYS_STATE_INITIALIZATION_REQUEST);
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateImdError);
+
+    /* state SYS_FSM_STATE_INITIALIZATION */
+    TEST_SYS_RunStateMachine(&sys_stateImdError);
+
+    /* Substate SYS_FSM_CHECK_NON_VOLATILE_STORAGE */
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_DEEP_DISCHARGE_FLAG, FRAM_ACCESS_OK);
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_FRAM_CALIBRATION, FRAM_ACCESS_OK);
+
+    TEST_SYS_RunStateMachine(&sys_stateImdError);
+
+    /* substate SYS_FSM_SUBSTATE_START_INITIALIZATION_SBC */
+    SBC_SetStateRequest_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATE_INIT_REQUEST, SBC_OK);
+    TEST_SYS_RunStateMachine(&sys_stateImdError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_SBC */
+    SBC_GetState_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATEMACHINE_RUNNING);
+    TEST_SYS_RunStateMachine(&sys_stateImdError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZATION_CAN */
+    CAN_Initialize_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateImdError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZE_RTC */
+    RTC_IsRtcModuleInitialized_ExpectAndReturn(true);
+    TEST_SYS_RunStateMachine(&sys_stateImdError);
+
+    /* substate SYS_FSM_SUBSTATE_SYSTEM_BIST */
+    DATA_ExecuteDataBist_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateImdError);
+
+    /* substate SYS_FSM_SUBSTATE_SEND_BOOT_MESSAGE */
+    SYS_SendBootMessage_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateImdError);
+
+    /* state SYS_FSM_STATE_PRE_RUNNING */
+    ILCK_SetStateRequest_ExpectAndReturn(ILCK_STATE_INITIALIZATION_REQUEST, ILCK_OK);
+    TEST_SYS_RunStateMachine(&sys_stateImdError);
+
+    /* substate SYS_FSM_SUBSTATE_START_INITIALIZATION_BAL */
+    BAL_SetStateRequest_ExpectAndReturn(BAL_STATE_INIT_REQUEST, BAL_OK);
+    TEST_SYS_RunStateMachine(&sys_stateImdError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_BAL */
+    BAL_GetInitializationState_ExpectAndReturn(STD_OK);
+    TEST_SYS_RunStateMachine(&sys_stateImdError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_BAL_GLOBAL_ENABLE */
+    BAL_SetStateRequest_ExpectAndReturn(BAL_STATE_GLOBAL_DISABLE_REQUEST, BAL_OK);
+    TEST_SYS_RunStateMachine(&sys_stateImdError);
+
+    /* substate SYS_FSM_SUBSTATE_START_FIRST_MEASUREMENT_CYCLE */
+    MEAS_StartMeasurement_ExpectAndReturn(STD_OK);
+    TEST_SYS_RunStateMachine(&sys_stateImdError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_FIRST_MEASUREMENT_CYCLE */
+    MEAS_IsFirstMeasurementCycleFinished_ExpectAndReturn(true);
+    ALGO_UnlockInitialization_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateImdError);
+
+    /* substate SYS_FSM_SUBSTATE_START_CURRENT_SENSOR_PRESENCE_CHECK*/
+    CAN_EnablePeriodic_Expect(true);
+    TEST_SYS_RunStateMachine(&sys_stateImdError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_CURRENT_SENSOR_PRESENCE_CHECK*/
+    for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
+        CAN_IsCurrentSensorPresent_ExpectAndReturn(s, true);
+        CAN_IsCurrentSensorCcPresent_ExpectAndReturn(s, true);
+        SE_InitializeSoc_Expect(true, s);
+        CAN_IsCurrentSensorEcPresent_ExpectAndReturn(s, true);
+        SE_InitializeSoe_Expect(true, s);
+        SE_InitializeSoh_Expect(s);
+    }
+    SOF_Init_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateImdError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZATION_MISC */
+    TEST_SYS_RunStateMachine(&sys_stateImdError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZATION_IMD */
+    for (uint16_t i = 0; i < SYS_STATE_MACHINE_INITIALIZATION_REQUEST_RETRY_COUNTER; i++) {
+        IMD_RequestInitialization_ExpectAndReturn(IMD_REQUEST_PENDING);
+        TEST_SYS_RunStateMachine(&sys_stateImdError);
+    }
+
+    /* state SYS_FSM_STATE_ERROR */
+    TEST_SYS_RunStateMachine(&sys_stateImdError);
+
+    /* ======= RT7/8: Test implementation: Error in IMD Initialization */
+    SYS_STATE_s sys_stateImdInitError  = {0};
+    sys_stateImdInitError.currentState = SYS_FSM_STATE_UNINITIALIZED;
+    /* state SYS_FSM_STATE_UNINITIALIZED */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    SYS_SetStateRequest(SYS_STATE_INITIALIZATION_REQUEST);
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+
+    /* state SYS_FSM_STATE_INITIALIZATION */
+    TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+
+    /* substate SYS_FSM_CHECK_NON_VOLATILE_STORAGE */
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_DEEP_DISCHARGE_FLAG, FRAM_ACCESS_OK);
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_FRAM_CALIBRATION, FRAM_ACCESS_OK);
+
+    TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+
+    /* substate SYS_FSM_SUBSTATE_START_INITIALIZATION_SBC */
+    SBC_SetStateRequest_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATE_INIT_REQUEST, SBC_OK);
+    TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_SBC */
+    SBC_GetState_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATEMACHINE_RUNNING);
+    TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZATION_CAN */
+    CAN_Initialize_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZE_RTC */
+    RTC_IsRtcModuleInitialized_ExpectAndReturn(true);
+    TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+
+    /* substate SYS_FSM_SUBSTATE_SYSTEM_BIST */
+    DATA_ExecuteDataBist_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+
+    /* substate SYS_FSM_SUBSTATE_SEND_BOOT_MESSAGE */
+    SYS_SendBootMessage_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+
+    /* state SYS_FSM_STATE_PRE_RUNNING */
+    ILCK_SetStateRequest_ExpectAndReturn(ILCK_STATE_INITIALIZATION_REQUEST, ILCK_OK);
+    TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+
+    /* substate SYS_FSM_SUBSTATE_START_INITIALIZATION_BAL */
+    BAL_SetStateRequest_ExpectAndReturn(BAL_STATE_INIT_REQUEST, BAL_OK);
+    TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_BAL */
+    BAL_GetInitializationState_ExpectAndReturn(STD_OK);
+    TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_BAL_GLOBAL_ENABLE */
+    BAL_SetStateRequest_ExpectAndReturn(BAL_STATE_GLOBAL_DISABLE_REQUEST, BAL_OK);
+    TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+
+    /* substate SYS_FSM_SUBSTATE_START_FIRST_MEASUREMENT_CYCLE */
+    MEAS_StartMeasurement_ExpectAndReturn(STD_OK);
+    TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_FIRST_MEASUREMENT_CYCLE */
+    MEAS_IsFirstMeasurementCycleFinished_ExpectAndReturn(true);
+    ALGO_UnlockInitialization_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+
+    /* substate SYS_FSM_SUBSTATE_START_CURRENT_SENSOR_PRESENCE_CHECK*/
+    CAN_EnablePeriodic_Expect(true);
+    TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_CURRENT_SENSOR_PRESENCE_CHECK*/
+    for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
+        CAN_IsCurrentSensorPresent_ExpectAndReturn(s, true);
+        CAN_IsCurrentSensorCcPresent_ExpectAndReturn(s, true);
+        SE_InitializeSoc_Expect(true, s);
+        CAN_IsCurrentSensorEcPresent_ExpectAndReturn(s, true);
+        SE_InitializeSoe_Expect(true, s);
+        SE_InitializeSoh_Expect(s);
+    }
+    SOF_Init_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZATION_MISC */
+    TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZATION_IMD */
+    for (uint16_t i = 0; i < SYS_STATE_MACHINE_INITIALIZATION_REQUEST_RETRY_COUNTER; i++) {
+        IMD_RequestInitialization_ExpectAndReturn(IMD_REQUEST_PENDING);
+        TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+    }
+
+    /* state SYS_FSM_STATE_ERROR */
+    TEST_SYS_RunStateMachine(&sys_stateImdInitError);
+
+    /* ======= RT8/8: Test implementation: Error in BMS Initialization */
+    SYS_STATE_s sys_stateBmsInitError  = {0};
+    sys_stateBmsInitError.currentState = SYS_FSM_STATE_UNINITIALIZED;
+    /* state SYS_FSM_STATE_UNINITIALIZED */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    SYS_SetStateRequest(SYS_STATE_INITIALIZATION_REQUEST);
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+
+    /* state SYS_FSM_STATE_INITIALIZATION */
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+
+    /* Substate SYS_FSM_CHECK_NON_VOLATILE_STORAGE */
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_DEEP_DISCHARGE_FLAG, FRAM_ACCESS_OK);
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_FRAM_CALIBRATION, FRAM_ACCESS_OK);
+
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+
+    /* substate SYS_FSM_SUBSTATE_START_INITIALIZATION_SBC */
+    SBC_SetStateRequest_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATE_INIT_REQUEST, SBC_OK);
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_SBC */
+    SBC_GetState_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATEMACHINE_RUNNING);
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZATION_CAN */
+    CAN_Initialize_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZE_RTC */
+    RTC_IsRtcModuleInitialized_ExpectAndReturn(true);
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+
+    /* substate SYS_FSM_SUBSTATE_SYSTEM_BIST */
+    DATA_ExecuteDataBist_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+
+    /* substate SYS_FSM_SUBSTATE_SEND_BOOT_MESSAGE */
+    SYS_SendBootMessage_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+
+    /* state SYS_FSM_STATE_PRE_RUNNING */
+    ILCK_SetStateRequest_ExpectAndReturn(ILCK_STATE_INITIALIZATION_REQUEST, ILCK_OK);
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+
+    /* substate SYS_FSM_SUBSTATE_START_INITIALIZATION_BAL */
+    BAL_SetStateRequest_ExpectAndReturn(BAL_STATE_INIT_REQUEST, BAL_OK);
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_BAL */
+    BAL_GetInitializationState_ExpectAndReturn(STD_OK);
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_BAL_GLOBAL_ENABLE */
+    BAL_SetStateRequest_ExpectAndReturn(BAL_STATE_GLOBAL_DISABLE_REQUEST, BAL_OK);
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+
+    /* substate SYS_FSM_SUBSTATE_START_FIRST_MEASUREMENT_CYCLE */
+    MEAS_StartMeasurement_ExpectAndReturn(STD_OK);
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_FIRST_MEASUREMENT_CYCLE */
+    MEAS_IsFirstMeasurementCycleFinished_ExpectAndReturn(true);
+    ALGO_UnlockInitialization_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+
+    /* substate SYS_FSM_SUBSTATE_START_CURRENT_SENSOR_PRESENCE_CHECK*/
+    CAN_EnablePeriodic_Expect(true);
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_CURRENT_SENSOR_PRESENCE_CHECK*/
+    for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
+        CAN_IsCurrentSensorPresent_ExpectAndReturn(s, true);
+        CAN_IsCurrentSensorCcPresent_ExpectAndReturn(s, true);
+        SE_InitializeSoc_Expect(true, s);
+        CAN_IsCurrentSensorEcPresent_ExpectAndReturn(s, true);
+        SE_InitializeSoe_Expect(true, s);
+        SE_InitializeSoh_Expect(s);
+    }
+    SOF_Init_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZATION_MISC */
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+
+    /* substate SYS_FSM_SUBSTATE_INITIALIZATION_IMD */
+    IMD_RequestInitialization_ExpectAndReturn(IMD_REQUEST_OK);
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+
+    /* substate SYS_FSM_SUBSTATE_START_INITIALIZATION_BMS */
+    BMS_SetStateRequest_ExpectAndReturn(BMS_STATE_INITIALIZATION_REQUEST, BMS_OK);
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+    /* substate SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_BMS */
+    for (uint16_t i = 0; i < (SYS_STATE_MACHINE_INITIALIZATION_TIMEOUT_MS / SYS_TASK_CYCLE_CONTEXT_MS) + 2; i++) {
+        BMS_GetInitializationState_ExpectAndReturn(STD_NOT_OK);
+        TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+    }
+
+    /* state SYS_FSM_STATE_ERROR */
+    TEST_SYS_RunStateMachine(&sys_stateBmsInitError);
+}
+
+void testSYS_CheckStateRequest(void) {
+    /* ======= Routine tests =============================================== */
+    SYS_STATE_REQUEST_e stateRequest = SYS_STATE_INITIALIZATION_REQUEST;
+
+    /* ======= RT1/3: Test implementation: initialization request */
+    TEST_SYS_CheckStateRequest(stateRequest);
+
+    /* ======= RT2/3: Test implementation: error request */
+    stateRequest = SYS_STATE_ERROR_REQUEST;
+    TEST_SYS_CheckStateRequest(stateRequest);
+
+    /* ======= RT3/3: Test implementation: no request */
+    stateRequest = SYS_STATE_NO_REQUEST;
+    TEST_SYS_CheckStateRequest(stateRequest);
+}
+
+/** make sure that the general BIST is running */
+void testSYS_GeneralMacroBist(void) {
+    TEST_ASSERT_PASS_ASSERT(TEST_SYS_GeneralMacroBist());
+}
+
+void testSYS_Trigger(void) {
+    /* ======= Assertion tests ============================================= */
+    /* ======= AT1/1: Assertion test */
+    TEST_ASSERT_FAIL_ASSERT(SYS_Trigger(NULL_PTR));
+
+    /* ======= Routine tests =============================================== */
+    SYS_STATE_s sys_state         = {0};
+    STD_RETURN_TYPE_e returnValue = STD_NOT_OK;
+
+    /* ======= RT1/x: Test implementation */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    returnValue = SYS_Trigger(&sys_state);
+    TEST_ASSERT_TRUE(returnValue == STD_OK);
+
+    /* ======= RT1/x: Test implementation */
+    sys_state.triggerEntry = 1u;
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    returnValue = SYS_Trigger(&sys_state);
+    TEST_ASSERT_TRUE(returnValue == STD_NOT_OK);
+
+    /* ======= RT1/x: Test implementation */
+    sys_state.triggerEntry = 0u;
+    sys_state.timer        = 2u;
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    returnValue = SYS_Trigger(&sys_state);
+    TEST_ASSERT_TRUE(returnValue == STD_OK);
+}
+
+void testSYS_UninitTests(void) {
+    SYS_STATE_s sys_stateNoReq  = {0};
+    sys_stateNoReq.currentState = SYS_FSM_STATE_UNINITIALIZED;
+    /* state SYS_FSM_STATE_UNINITIALIZED */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    SYS_SetStateRequest(SYS_STATE_NO_REQUEST);
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateNoReq);
+
+    TEST_ASSERT_EQUAL(SYS_FSM_STATE_UNINITIALIZED, sys_stateNoReq.currentState);
+    TEST_ASSERT_EQUAL(0, sys_stateNoReq.illegalRequestsCounter);
+
+    SYS_STATE_s sys_stateIllReq  = {0};
+    sys_stateIllReq.currentState = SYS_FSM_STATE_UNINITIALIZED;
+    /* state SYS_FSM_STATE_UNINITIALIZED */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    SYS_SetStateRequest(SYS_STATE_ERROR_REQUEST);
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateIllReq);
+
+    /* state SYS_FSM_STATE_UNINITIALIZED */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    SYS_SetStateRequest(SYS_STATE_ERROR_REQUEST);
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateIllReq);
+
+    TEST_ASSERT_EQUAL(SYS_FSM_STATE_UNINITIALIZED, sys_stateIllReq.currentState);
+    TEST_ASSERT_EQUAL(2, sys_stateIllReq.illegalRequestsCounter);
+}
+
+void testSYS_CurrentSensorSubstate(void) {
+
+    /* ======= RT1/3: Test everything works */
+    SYS_STATE_s sys_stateCurSens1     = {0};
+    sys_stateCurSens1.currentState    = SYS_FSM_STATE_PRE_RUNNING;
+    sys_stateCurSens1.currentSubstate = SYS_FSM_SUBSTATE_START_CURRENT_SENSOR_PRESENCE_CHECK;
+
+    /* state SYS_FSM_STATE_PRE_RUNNING, substate SYS_FSM_SUBSTATE_START_CURRENT_SENSOR_PRESENCE_CHECK*/
+    CAN_EnablePeriodic_Expect(true);
+    TEST_SYS_RunStateMachine(&sys_stateCurSens1);
+
+    /* state SYS_FSM_STATE_PRE_RUNNING, substate SYS_FSM_SUBSTATE_WAIT_CURRENT_SENSOR_PRESENCE_CHECK*/
+    for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
+        CAN_IsCurrentSensorPresent_ExpectAndReturn(s, true);
+        CAN_IsCurrentSensorCcPresent_ExpectAndReturn(s, true);
+        SE_InitializeSoc_Expect(true, s);
+        CAN_IsCurrentSensorEcPresent_ExpectAndReturn(s, true);
+        SE_InitializeSoe_Expect(true, s);
+        SE_InitializeSoh_Expect(s);
+    }
+    SOF_Init_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateCurSens1);
+
+    /* ======= RT2/3: Sensor present but not working  */
+    SYS_STATE_s sys_stateCurSens2     = {0};
+    sys_stateCurSens2.currentState    = SYS_FSM_STATE_PRE_RUNNING;
+    sys_stateCurSens2.currentSubstate = SYS_FSM_SUBSTATE_START_CURRENT_SENSOR_PRESENCE_CHECK;
+
+    /* state SYS_FSM_STATE_PRE_RUNNING, substate SYS_FSM_SUBSTATE_START_CURRENT_SENSOR_PRESENCE_CHECK*/
+    CAN_EnablePeriodic_Expect(true);
+    TEST_SYS_RunStateMachine(&sys_stateCurSens2);
+
+    /* state SYS_FSM_STATE_PRE_RUNNING, substate SYS_FSM_SUBSTATE_WAIT_CURRENT_SENSOR_PRESENCE_CHECK*/
+    for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
+        CAN_IsCurrentSensorPresent_ExpectAndReturn(s, true);
+        CAN_IsCurrentSensorCcPresent_ExpectAndReturn(s, false);
+        SE_InitializeSoc_Expect(false, s);
+        CAN_IsCurrentSensorEcPresent_ExpectAndReturn(s, false);
+        SE_InitializeSoe_Expect(false, s);
+        SE_InitializeSoh_Expect(s);
+    }
+    SOF_Init_Expect();
+    TEST_SYS_RunStateMachine(&sys_stateCurSens2);
+
+    /* ======= RT3/3: Sensor not present */
+    SYS_STATE_s sys_stateCurSens3     = {0};
+    sys_stateCurSens3.currentState    = SYS_FSM_STATE_PRE_RUNNING;
+    sys_stateCurSens3.currentSubstate = SYS_FSM_SUBSTATE_START_CURRENT_SENSOR_PRESENCE_CHECK;
+
+    /* state SYS_FSM_STATE_PRE_RUNNING, substate SYS_FSM_SUBSTATE_START_CURRENT_SENSOR_PRESENCE_CHECK*/
+    CAN_EnablePeriodic_Expect(true);
+    TEST_SYS_RunStateMachine(&sys_stateCurSens3);
+    TEST_ASSERT_EQUAL(0, sys_stateCurSens3.initializationTimeout);
+
+    /* state SYS_FSM_STATE_PRE_RUNNING, substate SYS_FSM_SUBSTATE_WAIT_CURRENT_SENSOR_PRESENCE_CHECK*/
+    for (uint8_t i = 0; i <= (SYS_STATE_MACHINE_INITIALIZATION_TIMEOUT_MS / SYS_TASK_CYCLE_CONTEXT_MS) + 1; i++) {
+        for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
+            CAN_IsCurrentSensorPresent_ExpectAndReturn(s, false);
+        }
+        TEST_SYS_RunStateMachine(&sys_stateCurSens3);
+    }
+
+    /* state SYS_FSM_STATE_ERROR */
+    TEST_SYS_RunStateMachine(&sys_stateCurSens3);
+    TEST_ASSERT_EQUAL(SYS_FSM_STATE_ERROR, sys_stateCurSens3.currentState);
+}
+
+/**
+ * @brief   Testing SYS_CheckMultipleCalls
+ * @details The following cases need to be tested:
+ *          - Argument validation:
+ *            - AT1/1: NULL_PTR for pSystemState -> assert
+ *          - Routine validation:
+ *            - RT1/2: Not multiple calls
+ *            - RT2/2: Multiple calls
+ */
+void testSYS_CheckMultipleCalls(void) {
+    /* ======= Assertion tests ============================================= */
+    /* ======= AT1/1 ======= */
+    TEST_ASSERT_FAIL_ASSERT(TEST_SYS_CheckMultipleCalls(NULL_PTR));
+    /* ======= Routine tests =============================================== */
+    /* ======= RT1/2: Test implementation */
+    SYS_STATE_s testState = {
+        .triggerEntry = 0u,
+    };
+    /* ======= RT1/2: Call function under test */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    SYS_CHECK_MULTIPLE_CALLS_e testResult = TEST_SYS_CheckMultipleCalls(&testState);
+    /* ======= RT1/2: Test output verification */
+    TEST_ASSERT_EQUAL(SYS_MULTIPLE_CALLS_NO, testResult);
+
+    /* ======= RT2/2: Test implementation */
+    testState.triggerEntry = 1u;
+    /* ======= RT2/2: Call function under test */
+    OS_EnterTaskCritical_Expect();
+    OS_ExitTaskCritical_Expect();
+    testResult = TEST_SYS_CheckMultipleCalls(&testState);
+    /* ======= RT2/2: Test output verification */
+    TEST_ASSERT_EQUAL(SYS_MULTIPLE_CALLS_YES, testResult);
+}
+
+/**
+ * @brief   Testing SYS_SetSubstate
+ * @details The following cases need to be tested:
+ *          - Argument validation:
+ *            - AT1/1: NULL_PTR for pSystemState -> assert
+ *          - Routine validation:
+ *            - RT1/1: Function sets sys state as expected
+ */
+void testSYS_SetSubstate(void) {
+    /* ======= Assertion tests ============================================= */
+    uint16_t idleTime = 100u;
+    /* ======= AT1/1 ======= */
+    TEST_ASSERT_FAIL_ASSERT(TEST_SYS_SetSubstate(NULL_PTR, SYS_FSM_SUBSTATE_DUMMY, idleTime));
+    /* ======= Routine tests =============================================== */
+    /* ======= RT1/1: Test implementation */
+    SYS_STATE_s testState = {
+        .timer            = 1u,
+        .previousSubstate = SYS_FSM_SUBSTATE_ENTRY,
+        .currentSubstate  = SYS_FSM_CHECK_NON_VOLATILE_STORAGE,
+        .nextSubstate     = SYS_FSM_SUBSTATE_START_INITIALIZATION_SBC,
+    };
+    /* ======= RT1/1: Call function under test */
+    TEST_SYS_SetSubstate(&testState, testState.nextSubstate, idleTime);
+    /* ======= RT1/1: Test output verification */
+    SYS_STATE_s referenceState = {
+        .timer            = 100u,
+        .previousSubstate = SYS_FSM_CHECK_NON_VOLATILE_STORAGE,
+        .currentSubstate  = SYS_FSM_SUBSTATE_START_INITIALIZATION_SBC,
+        .nextSubstate     = SYS_FSM_SUBSTATE_DUMMY,
+    };
+    TEST_ASSERT_EQUAL(referenceState.timer, testState.timer);
+    TEST_ASSERT_EQUAL(referenceState.previousState, testState.previousState);
+    TEST_ASSERT_EQUAL(referenceState.currentSubstate, testState.currentSubstate);
+    TEST_ASSERT_EQUAL(referenceState.nextSubstate, testState.nextSubstate);
+}
+
+/**
+ * @brief   Testing SYS_SetState
+ * @details The following cases need to be tested:
+ *          - Argument validation:
+ *            - AT1/1: NULL_PTR for pSystemState -> assert
+ *          - Routine validation:
+ *            - RT1/5: Current state and substate equal next state and substate
+ *            - RT2/5: Change state to next valid state (not error state)
+ *            - RT3/5: Change state to error state
+ *            - RT4/5: Change only substate
+ *            - RT5/5: Change only state
+ */
+void testSYS_SetState(void) {
+    /* ======= Assertion tests ============================================= */
+    uint16_t idleTime = 100u;
+    /* ======= AT1/1 ======= */
+    TEST_ASSERT_FAIL_ASSERT(TEST_SYS_SetState(NULL_PTR, SYS_FSM_STATE_DUMMY, SYS_FSM_SUBSTATE_DUMMY, idleTime));
+    /* ======= Routine tests =============================================== */
+    /* ======= RT1/5: current state and substate equal next state and substate */
+    SYS_STATE_s sys_stateEqual      = {0};
+    sys_stateEqual.previousState    = SYS_FSM_STATE_DUMMY;
+    sys_stateEqual.previousSubstate = SYS_FSM_SUBSTATE_DUMMY;
+    sys_stateEqual.currentState     = SYS_FSM_STATE_PRE_RUNNING;
+    sys_stateEqual.currentSubstate  = SYS_FSM_SUBSTATE_START_CURRENT_SENSOR_PRESENCE_CHECK;
+    sys_stateEqual.nextState        = SYS_FSM_STATE_PRE_RUNNING;
+    sys_stateEqual.nextSubstate     = SYS_FSM_SUBSTATE_WAIT_CURRENT_SENSOR_PRESENCE_CHECK;
+
+    TEST_SYS_SetState(
+        &sys_stateEqual, SYS_FSM_STATE_PRE_RUNNING, SYS_FSM_SUBSTATE_START_CURRENT_SENSOR_PRESENCE_CHECK, idleTime);
+
+    TEST_ASSERT_EQUAL(SYS_FSM_STATE_PRE_RUNNING, sys_stateEqual.previousState);
+    TEST_ASSERT_EQUAL(SYS_FSM_STATE_PRE_RUNNING, sys_stateEqual.currentState);
+    TEST_ASSERT_EQUAL(SYS_FSM_STATE_DUMMY, sys_stateEqual.nextState);
+
+    TEST_ASSERT_EQUAL(SYS_FSM_SUBSTATE_START_CURRENT_SENSOR_PRESENCE_CHECK, sys_stateEqual.previousSubstate);
+    TEST_ASSERT_EQUAL(SYS_FSM_SUBSTATE_START_CURRENT_SENSOR_PRESENCE_CHECK, sys_stateEqual.currentSubstate);
+    TEST_ASSERT_EQUAL(SYS_FSM_SUBSTATE_DUMMY, sys_stateEqual.nextSubstate);
+
+    TEST_ASSERT_EQUAL(idleTime, sys_stateEqual.timer);
+
+    /* ======= RT2/5: change state to next valid state (not error state) */
+    SYS_STATE_s sys_stateNextValid      = {0};
+    sys_stateNextValid.previousState    = SYS_FSM_STATE_DUMMY;
+    sys_stateNextValid.previousSubstate = SYS_FSM_SUBSTATE_DUMMY;
+    sys_stateNextValid.currentState     = SYS_FSM_STATE_INITIALIZATION;
+    sys_stateNextValid.currentSubstate  = SYS_FSM_SUBSTATE_SEND_BOOT_MESSAGE;
+    sys_stateNextValid.nextState        = SYS_FSM_STATE_PRE_RUNNING;
+    sys_stateNextValid.nextSubstate     = SYS_FSM_SUBSTATE_ENTRY;
+
+    TEST_SYS_SetState(&sys_stateNextValid, SYS_FSM_STATE_PRE_RUNNING, SYS_FSM_SUBSTATE_SEND_BOOT_MESSAGE, idleTime);
+
+    TEST_ASSERT_EQUAL(SYS_FSM_STATE_INITIALIZATION, sys_stateNextValid.previousState);
+    TEST_ASSERT_EQUAL(SYS_FSM_STATE_PRE_RUNNING, sys_stateNextValid.currentState);
+    TEST_ASSERT_EQUAL(SYS_FSM_STATE_DUMMY, sys_stateNextValid.nextState);
+
+    TEST_ASSERT_EQUAL(SYS_FSM_SUBSTATE_SEND_BOOT_MESSAGE, sys_stateNextValid.previousSubstate);
+    TEST_ASSERT_EQUAL(SYS_FSM_SUBSTATE_ENTRY, sys_stateNextValid.currentSubstate);
+    TEST_ASSERT_EQUAL(SYS_FSM_SUBSTATE_DUMMY, sys_stateNextValid.nextSubstate);
+
+    TEST_ASSERT_EQUAL(idleTime, sys_stateNextValid.timer);
+
+    /* ======= RT3/5: change state to error state */
+    SYS_STATE_s sys_stateNextError      = {0};
+    sys_stateNextError.previousState    = SYS_FSM_STATE_DUMMY;
+    sys_stateNextError.previousSubstate = SYS_FSM_SUBSTATE_DUMMY;
+    sys_stateNextError.currentState     = SYS_FSM_STATE_INITIALIZATION;
+    sys_stateNextError.currentSubstate  = SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_SBC;
+
+    TEST_SYS_SetState(&sys_stateNextError, SYS_FSM_STATE_ERROR, SYS_FSM_SUBSTATE_SBC_INITIALIZATION_ERROR, idleTime);
+
+    TEST_ASSERT_EQUAL(SYS_FSM_STATE_INITIALIZATION, sys_stateNextError.previousState);
+    TEST_ASSERT_EQUAL(SYS_FSM_STATE_ERROR, sys_stateNextError.currentState);
+
+    TEST_ASSERT_EQUAL(SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_SBC, sys_stateNextError.previousSubstate);
+    TEST_ASSERT_EQUAL(SYS_FSM_SUBSTATE_SBC_INITIALIZATION_ERROR, sys_stateNextError.currentSubstate);
+
+    TEST_ASSERT_EQUAL(idleTime, sys_stateNextError.timer);
+
+    /* ======= RT4/5: change only substate */
+    SYS_STATE_s sys_stateOnlySub      = {0};
+    sys_stateOnlySub.previousState    = SYS_FSM_STATE_DUMMY;
+    sys_stateOnlySub.previousSubstate = SYS_FSM_SUBSTATE_DUMMY;
+    sys_stateOnlySub.currentState     = SYS_FSM_STATE_INITIALIZATION;
+    sys_stateOnlySub.currentSubstate  = SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_SBC;
+
+    TEST_SYS_SetState(&sys_stateOnlySub, SYS_FSM_STATE_INITIALIZATION, SYS_FSM_SUBSTATE_INITIALIZATION_CAN, idleTime);
+
+    TEST_ASSERT_EQUAL(SYS_FSM_STATE_INITIALIZATION, sys_stateOnlySub.previousState);
+    TEST_ASSERT_EQUAL(SYS_FSM_STATE_INITIALIZATION, sys_stateOnlySub.currentState);
+
+    TEST_ASSERT_EQUAL(SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_SBC, sys_stateOnlySub.previousSubstate);
+    TEST_ASSERT_EQUAL(SYS_FSM_SUBSTATE_INITIALIZATION_CAN, sys_stateOnlySub.currentSubstate);
+
+    TEST_ASSERT_EQUAL(idleTime, sys_stateOnlySub.timer);
+
+    /* ======= RT5/5: change only state */
+    SYS_STATE_s sys_stateOnlyState      = {0};
+    sys_stateOnlyState.previousState    = SYS_FSM_STATE_DUMMY;
+    sys_stateOnlyState.previousSubstate = SYS_FSM_SUBSTATE_DUMMY;
+    sys_stateOnlyState.currentState     = SYS_FSM_STATE_INITIALIZATION;
+    sys_stateOnlyState.currentSubstate  = SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_SBC;
+
+    TEST_SYS_SetState(&sys_stateOnlyState, SYS_FSM_STATE_RUNNING, SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_SBC, idleTime);
+
+    TEST_ASSERT_EQUAL(SYS_FSM_STATE_INITIALIZATION, sys_stateOnlyState.previousState);
+    TEST_ASSERT_EQUAL(SYS_FSM_STATE_RUNNING, sys_stateOnlyState.currentState);
+
+    TEST_ASSERT_EQUAL(SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_SBC, sys_stateOnlyState.previousSubstate);
+    TEST_ASSERT_EQUAL(SYS_FSM_SUBSTATE_ENTRY, sys_stateOnlyState.currentSubstate);
+
+    TEST_ASSERT_EQUAL(idleTime, sys_stateOnlyState.timer);
+}
+
+/**
+ * @brief   Testing SYS_ProcessInitializationState
+ * @details The following cases need to be tested:
+ *          - Argument validation:
+ *            - AT1/2: NULL_PTR for pSystemState -> assert
+ *            - AT2/2: Invalid substate
+ *          - Routine validation:
+ *            - RT01/10: (TODO:) Case SYS_FSM_SUBSTATE_ENTRY
+ *            - RT02/10: Case SYS_FSM_CHECK_NON_VOLATILE_STORAGE no deep discharge
+ *            - RT03/10: Case SYS_FSM_CHECK_NON_VOLATILE_STORAGE deep discharge
+ *            - RT04/10: Case SYS_FSM_SUBSTATE_START_INITIALIZATION_SBC sbc state request ok
+ *            - RT05/10: Case SYS_FSM_SUBSTATE_START_INITIALIZATION_SBC sbc state request not ok
+ *            - RT06/10: (TODO:) Case SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_SBC
+ *            - RT07/10: (TODO:) Case SYS_FSM_SUBSTATE_INITIALIZATION_CAN
+ *            - RT08/10: (TODO:) Case SYS_FSM_SUBSTATE_INITIALIZATION_RTC
+ *            - RT09/10: (TODO:) Case SYS_FSM_SUBSTATE_START_UP_BIST
+ *            - RT10/10: (TODO:) Case SYS_FSM_SUBSTATE_SEND_BOOT_MESSAGE
+ */
+void testSYS_ProcessInitializationState(void) {
+    /* ======= Assertion tests ============================================= */
+    /* ======= AT1/2 ======= */
+    TEST_ASSERT_FAIL_ASSERT(TEST_SYS_ProcessInitializationState(NULL_PTR));
+    /* ======= AT2/2 ======= */
+    SYS_STATE_s stateInvalidState = {
+        .currentSubstate = SYS_FSM_SUBSTATE_DUMMY,
+    };
+    TEST_ASSERT_FAIL_ASSERT(TEST_SYS_ProcessInitializationState(&stateInvalidState));
+    /* ======= Routine tests =============================================== */
+    SYS_STATE_s testState = {0};
+    /* ======= RT02/10: Test implementation */
+    testState.currentSubstate = SYS_FSM_CHECK_NON_VOLATILE_STORAGE;
+    for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
+        fram_deepDischargeFlags.deepDischargeFlag[s] = false;
+    }
+
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_DEEP_DISCHARGE_FLAG, FRAM_ACCESS_OK);
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_FRAM_CALIBRATION, FRAM_ACCESS_OK);
+    /* ======= RT02/10: Call function under test */
+    SYS_FSM_STATES_e testResult = TEST_SYS_ProcessInitializationState(&testState);
+    /* ======= RT02/10: Test output verification */
+    TEST_ASSERT_EQUAL(SYS_FSM_STATE_INITIALIZATION, testResult);
+    TEST_ASSERT_EQUAL(SYS_FSM_SUBSTATE_START_INITIALIZATION_SBC, testState.currentSubstate);
+    TEST_ASSERT_EQUAL(SYS_FSM_SHORT_TIME, testState.timer);
+
+    /* ======= RT03/10: Test implementation */
+    testState.currentSubstate = SYS_FSM_CHECK_NON_VOLATILE_STORAGE;
+    for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
+        fram_deepDischargeFlags.deepDischargeFlag[s] = true;
+    }
+    /* ======= RT03/10: Call function under test */
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_DEEP_DISCHARGE_FLAG, FRAM_ACCESS_OK);
+    FRAM_ReadData_ExpectAndReturn(FRAM_BLOCK_ID_FRAM_CALIBRATION, FRAM_ACCESS_OK);
+
+    for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
+        DIAG_Handler_ExpectAndReturn(
+            DIAG_ID_DEEP_DISCHARGE_DETECTED, DIAG_EVENT_NOT_OK, DIAG_STRING, s, DIAG_HANDLER_RETURN_OK);
+    }
+    testResult = TEST_SYS_ProcessInitializationState(&testState);
+    /* ======= RT03/10: Test output verification */
+    TEST_ASSERT_EQUAL(SYS_FSM_STATE_INITIALIZATION, testResult);
+    TEST_ASSERT_EQUAL(SYS_FSM_SUBSTATE_START_INITIALIZATION_SBC, testState.currentSubstate);
+    TEST_ASSERT_EQUAL(SYS_FSM_SHORT_TIME, testState.timer);
+    /* Reset deep discharge flags */
+    for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
+        fram_deepDischargeFlags.deepDischargeFlag[s] = false;
+    }
+
+    /* ======= RT04/10: Test implementation */
+    testState.currentSubstate = SYS_FSM_SUBSTATE_START_INITIALIZATION_SBC;
+    SBC_SetStateRequest_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATE_INIT_REQUEST, SBC_OK);
+    /* ======= RT04/10: Call function under test */
+    testResult = TEST_SYS_ProcessInitializationState(&testState);
+    /* ======= RT04/10: Test output verification */
+    TEST_ASSERT_EQUAL(SYS_FSM_STATE_INITIALIZATION, testResult);
+    TEST_ASSERT_EQUAL(SYS_FSM_SUBSTATE_WAIT_INITIALIZATION_SBC, testState.currentSubstate);
+    TEST_ASSERT_EQUAL(SYS_FSM_SHORT_TIME, testState.timer);
+
+    /* ======= RT05/10: Test implementation */
+    testState.currentSubstate = SYS_FSM_SUBSTATE_START_INITIALIZATION_SBC;
+    testState.timer           = 0u;
+    testState.currentState    = SYS_FSM_STATE_DUMMY;
+    SBC_SetStateRequest_ExpectAndReturn(&sbc_stateMcuSupervisor, SBC_STATE_INIT_REQUEST, SBC_BUSY_OK);
+    /* ======= RT05/10: Call function under test */
+    testResult = TEST_SYS_ProcessInitializationState(&testState);
+    /* ======= RT05/10: Test output verification */
+    TEST_ASSERT_EQUAL(SYS_FSM_STATE_INITIALIZATION, testResult);
+    TEST_ASSERT_EQUAL(SYS_FSM_SUBSTATE_START_INITIALIZATION_SBC, testState.currentSubstate);
+    TEST_ASSERT_EQUAL(0u, testState.timer);
+}

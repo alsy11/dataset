@@ -1,0 +1,667 @@
+.. include:: ./../macros.txt
+.. include:: ./../units.txt
+
+.. This file must manually be kept in sync with
+.. ./INSTALL.md
+.. except for the Linux part, that is only documented in here
+
+.. _SOFTWARE_INSTALLATION:
+
+#####################
+Software Installation
+#####################
+
+This document describes how to setup the **host machine** for development of
+|foxbms|.
+
+If only some of the |fox-cli| tools are needed and access to the
+repository is not required, install the |fox-cli-package| instead
+of setting up the entire software suite.
+Installation instructions for the |fox-cli-package| can be found in
+:ref:`INSTALL_FOX_CLI_PACKAGE`.
+
+.. note::
+
+   Read the documentation carefully and follow every point exactly as
+   described.
+   Otherwise, the configuration workload in later points of the setup or the
+   development will be significantly higher.
+
+.. note::
+
+   Some programs are installed into a specific |foxbms| prefix.
+   This is mostly then done, when the installers do not support side-by-side or
+   versioned installations by themself.
+   The installation prefixes are as follows
+
+   .. table::
+
+      +--------------------+-----------------------+
+      | Operating system   | Installation prefix   |
+      +--------------------+-----------------------+
+      | Linux              | ``/opt/foxbms``       |
+      +--------------------+-----------------------+
+      | Windows            | ``C:\foxbms``         |
+      +--------------------+-----------------------+
+
+.. warning::
+
+   - All commands shall be run in PowerShell 7 or later.
+   - All commands shall be run in the root of the repository.
+
+.. warning::
+   These are the installation instructions for the host machine.
+   These are **NOT** the instructions for installing (i.e., flashing) the
+   created binary on the target.
+   Flashing the binary requires a hardware debugger/flashing tool.
+
+Getting started with |foxbms| requires getting the sources and installing
+all required software dependencies.
+These are the required steps:
+
+#. Install |git|
+#. Get the |foxbms| sources
+#. Install |ti-code-composer-studio| (required for compiling)
+#. Install |ti-halcogen| (required for code generation)
+#. Install |python| (required for tools)
+#. Install |virtual-python-environment| (required for tools)
+#. Install |ruby| (required for unit testing)
+#. Install |mingw-w64| (required for unit testing)
+#. Install |doxygen| (required for building the documentation)
+#. Install |graphviz| (required for building the documentation)
+#. Install |drawio-desktop| (required for building the documentation)
+#. Install |vs-code| (required developing)
+#. Check the installation
+
+.. note::
+
+   No software installation here should change the ``PATH`` environment
+   variable.
+   When an installer asks during the setup to add something to ``PATH``, always
+   remove that option, whether it is explicitly mentioned in
+   that step or not.
+   The only exception to that rule **MAY** be |git| and |vs-code|.
+
+The installation steps are described below in detail.
+
+.. _git_install:
+
+*************
+Install |git|
+*************
+
+#. Download the latest version of |git| at |url_git| and run the
+   installer.
+#. *Optional:* Let the installer add |git| to the ``PATH`` variable.
+
+
+************************
+Get the |foxbms| Sources
+************************
+
+The sources are available from a |git| repository at |github_foxbms|
+in |foxbms_repository|.
+The following example shows how to clone the |foxbms| sources from GitHub.
+
+In the case that you have been supplied with a "library-project" by a partner,
+please use this archive equivalent to the cloned |foxbms| repository" in the
+later steps of this manual.
+
+.. note::
+
+   |git| requires a correct proxy setup.
+   This means that the environment variables ``http_proxy`` and ``https_proxy``
+   must be set accordingly to your network configuration.
+
+.. warning::
+
+   Do not clone/download |foxbms| into a directory structure that includes
+   whitespace.
+
+   .. table::
+
+      +------------------------------+--------------------------------------+
+      | Good                         | Bad                                  |
+      +------------------------------+--------------------------------------+
+      | ``C:\Users\vulpes\foxbms-2`` | ``C:\Users\my user name\foxbms-2``   |
+      +------------------------------+--------------------------------------+
+      | ``/opt/devel/foxbms-2``      | ``/opt/bad directory name/foxbms-2`` |
+      +------------------------------+--------------------------------------+
+
+Clone the repository by running
+
+.. code-block:: shell
+
+   git clone https://github.com/foxBMS/foxbms-2
+
+.. _css_install:
+
+*********************************
+Install |ti-code-composer-studio|
+*********************************
+
+Download `Code Composer Studio`_ (CCS)
+version |version_ti-code-composer-studio| and run the installer (chose the
+``single file (offline) installer for Code Composer Studio IDE (all features, devices)``
+depending on your host platform).
+
+.. tabs::
+
+   .. group-tab:: Windows
+
+      When running the installer:
+
+      #. Do **NOT** change the default installation directory chosen by the
+         installer and let the installer proceed with the installation into the
+         installation directory (e.g., ``C:\ti\ccs1281`` for CCS ``12.8.1``).
+      #. Select the ``Hercules™ Safety MCUs`` option during the installation.
+
+   .. group-tab:: Linux
+
+      When running the installer:
+
+      #. Do **NOT** change the default installation directory chosen by the
+         installer and let the installer proceed with the installation into the
+         installation directory (e.g., ``/opt/ti/ccs1281`` for CCS ``12.8.1``).
+      #. Select the ``Hercules™ Safety MCUs`` option during the installation.
+
+Installing |ti-code-composer-studio| may take a while.
+
+*********************
+Install |ti-halcogen|
+*********************
+
+.. tabs::
+
+   .. group-tab:: Windows
+
+      Download |ti-halcogen| version |version_ti-halcogen| from
+      |url_ti-halcogen_releases|
+      and run the installer.
+      When running the installer:
+      Do **not** change the default installation directory chosen by the
+      installer and let the installer proceed with the installation into the
+      installation directory (i.e., ``C:\ti\...`` for |ti-halcogen| ``04.07.01``
+      that means into ``C:\ti\Hercules\HALCoGen\v04.07.01``).
+
+      Installing |ti-halcogen| may take a while.
+
+   .. group-tab:: Linux
+
+      |ti-halcogen| is not available on Linux.
+
+
+.. _install_python:
+
+****************
+Install |python|
+****************
+
+.. tabs::
+
+   .. group-tab:: Windows
+
+         #. Install `Python 3.14 <https://www.python.org>`_.
+            If you have already installed Python 3.14 from https://www.python.org this
+            step can be skipped.
+
+            .. note::
+
+               The required Python version is exactly 3.14.x.
+
+         #. Open a terminal and run ``py -3.14 --version``, this should print
+            something like ``Python 3.14.6`` or similar:
+
+            .. tabs::
+
+               .. code-block:: powershell
+
+                  py -3.14 --version
+                  Python 3.14.6
+
+   .. group-tab:: Linux
+
+      #. Install ``Python 3.14``.
+         If you have already installed Python 3.14 this step can be skipped.
+
+         .. note::
+
+            The required Python version is exactly 3.14.x.
+
+      #. Open a terminal and run ``python3.14 --version``, this should print
+         something like ``Python 3.14.6`` or similar:
+
+         .. code-block:: shell
+
+            python3.14 --version
+            Python 3.14.6
+
+.. _install_venv:
+
+************************************
+Install |virtual-python-environment|
+************************************
+
+#. Create a virtual environment **2026-07-pale-fox** by running:
+
+   .. tabs::
+
+      .. group-tab:: Windows
+
+         .. tabs::
+
+            .. group-tab:: PowerShell
+
+               .. code-block:: powershell
+
+                  py -3.14 -m venv C:\foxbms\envs\2026-07-pale-fox
+
+            .. group-tab:: Git bash
+
+               .. code-block:: shell
+
+                  py -3.14 -m venv /C/foxbms/envs/2026-07-pale-fox
+
+      .. group-tab:: Linux
+
+         .. code-block:: shell
+
+            python3.14 -m venv /opt/foxbms/envs/2026-07-pale-fox
+
+#. Activate the virtual environment by running:
+
+   .. tabs::
+
+      .. group-tab:: Windows
+
+         .. tabs::
+
+            .. group-tab:: PowerShell
+
+               .. code-block:: powershell
+
+                  C:\foxbms\envs\2026-07-pale-fox\Scripts\activate.ps1
+
+            .. group-tab:: Git bash
+
+               .. code-block:: shell
+
+                  source /C/foxbms/envs/2026-07-pale-fox/Scripts/activate
+
+      .. group-tab:: Linux
+
+         .. code-block:: shell
+
+            source /opt/foxbms/envs/2026-07-pale-fox/bin/activate
+
+#. Install the required packages by running:
+
+   .. note::
+
+      ``pip`` requires a correct proxy setup.
+
+   .. code-block:: shell
+
+      python -m pip install -r requirements.txt
+
+#. Deactivate the virtual environment by running:
+
+   .. code-block:: shell
+
+      deactivate
+
+The virtual environment includes the pre-commit framework (|url_pre-commit|).
+The pre-commit framework installs its dependencies defined in
+``.pre-commit-config.yaml`` by itself when it is run and dependencies are
+missing.
+
+.. _ruby_install:
+
+**************
+Install |ruby|
+**************
+
+.. note::
+
+   Installing Ruby requires 7-Zip to be installed.
+   7-Zip can be download from https://7-zip.org.
+
+.. tabs::
+
+   .. group-tab:: Windows
+
+      #. Download the zip-archive
+         `Ruby 3.4.2-1 (x64)  <https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-3.4.2-1/rubyinstaller-3.4.2-1-x64.7z>`_.
+      #. Extract the archive to ``C:\foxbms\Ruby\Ruby34-x64``.
+      #. Verify that ``ruby.exe`` is available at
+         ``C:\foxbms\Ruby\Ruby34-x64\bin\ruby.exe``.
+
+   .. group-tab:: Linux
+
+      Use your distributions package manager to install |ruby|.
+
+*******************
+Install |mingw-w64|
+*******************
+
+.. tabs::
+
+   .. group-tab:: Windows
+
+      .. note::
+
+         Installing |mingw-w64| requires 7-Zip to be installed.
+         7-Zip can be download from https://7-zip.org.
+
+      #. Download |mingw-w64| version x86_64-posix-seh from
+         `sourceforge.net <https://sourceforge.net/projects/mingw-w64/files/mingw-w64/>`_
+         (**use this**
+         `7z-archive <https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/seh/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z>`_).
+
+      #. Extract the archive.
+      #. Copy the extracted content of the ``mingw64`` directory to
+         ``C:\foxbms\mingw-w64\x86_64-8.1.0-release-posix-seh-rt_v6-rev0``.
+      #. Verify that ``gcc.exe`` is available at
+         ``C:\foxbms\mingw-w64\x86_64-8.1.0-release-posix-seh-rt_v6-rev0\bin\gcc.exe``.
+
+   .. group-tab:: Linux
+
+      |gcc| is already available.
+
+*****************
+Install |doxygen|
+*****************
+
+.. tabs::
+
+   .. group-tab:: Windows
+
+      #. Download |doxygen| version 1.14.0 from
+         `GitHub <https://github.com/doxygen/doxygen/releases/tag/Release_1_14_0>`_.
+         (use this
+         `zip-archive <https://github.com/doxygen/doxygen/releases/download/Release_1_14_0/doxygen-1.14.0.windows.x64.bin.zip>`__).
+
+      #. Extract the archive.
+      #. Copy the extracted archive to ``C:\foxbms\Doxygen\1.14.0``.
+      #. Verify that ``doxygen.exe`` is available at
+         ``C:\foxbms\Doxygen\1.14.0\doxygen.exe``.
+
+   .. group-tab:: Linux
+
+      Use your distributions package manager to install |doxygen|.
+
+******************
+Install |graphviz|
+******************
+
+.. tabs::
+
+   .. group-tab:: Windows
+
+      #. Download Graphviz version 14.0.0 from
+         `https://graphviz.org/download <https://graphviz.org/download>`_.
+         (use this
+         `zip-archive <https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/14.0.0/windows_10_cmake_Release_Graphviz-14.0.0-win64.zip>`__).
+
+      #. Extract the archive.
+      #. Copy the extracted archive to ``C:\foxbms\Graphviz\14.0.0``.
+      #. Verify that ``dot.exe`` is available at
+         ``C:\foxbms\Graphviz\14.0.0\bin\dot.exe``.
+
+   .. group-tab:: Linux
+
+      Use your distributions package manager to install Graphviz.
+
+************************
+Install |drawio-desktop|
+************************
+
+.. tabs::
+
+   .. group-tab:: Windows
+
+      #. Download |drawio-desktop| version 28.1.2 from
+         `https://github.com/jgraph/drawio-desktop/releases <https://github.com/jgraph/drawio-desktop/releases>`_
+         (use this
+         `installer <https://github.com/jgraph/drawio-desktop/releases/download/v28.1.2/draw.io-28.1.2-windows.zip>`_).
+
+      #. Extract the archive.
+      #. Copy the extracted archive to ``C:\foxbms\draw.io\28.1.2``.
+      #. Verify that ``draw.io.exe`` is available at
+         ``C:\foxbms\draw.io\28.1.2\draw.io.exe``.
+
+   .. group-tab:: Linux
+
+      Use your distributions package manager to install |drawio-desktop|.
+
+*****************
+Install |vs-code|
+*****************
+
+|foxbms| supports development using `Visual Studio Code`_.
+
+#. Download |vs-code| from the project website at `Visual Studio Code`_.
+#. Run the installer.
+#. *Optional:* Let the installer add |vs-code| to the ``PATH`` variable.
+
+******************
+Installation Check
+******************
+
+Check that all required software is installed by running:
+
+.. tabs::
+
+   .. group-tab:: Windows
+
+      .. tabs::
+
+         .. group-tab:: PowerShell
+
+            .. code-block:: powershell
+
+               .\fox.ps1 install --check
+
+         .. group-tab:: Git bash
+
+            .. code-block:: shell
+
+               ./fox.sh install --check
+
+   .. group-tab:: Linux
+
+      .. code-block:: shell
+
+         ./fox.sh install --check
+
+After following these steps, the check shall succeed and all required software
+has been successfully installed.
+
+.. _environment_updates:
+
+*******************
+Environment Updates
+*******************
+
+Sometimes it might be required to update the build environment.
+It that is the case, it is then mentioned in the
+:ref:`CHANGELOG`.
+
+To update the build environment the following steps must be done:
+
+.. note::
+
+   The placeholder ``<name-of-the-new-env>`` must be replaced
+   with the actual name of the new build environment, which is
+   then documented in the
+   :ref:`CHANGELOG`.
+
+#. Create a virtual environment **<name-of-the-new-env>** by running:
+
+   .. tabs::
+
+      .. group-tab:: Windows
+
+         .. tabs::
+
+            .. group-tab:: PowerShell
+
+               .. code-block:: powershell
+
+                  py -3.14 -m venv C:\foxbms\envs\<name-of-the-new-env>
+
+            .. group-tab:: Git bash
+
+               .. code-block:: shell
+
+                  py -3.14 -m venv /C/foxbms/envs/<name-of-the-new-env>
+
+      .. group-tab:: Linux
+
+         .. code-block:: shell
+
+            python3.14 -m venv /opt/foxbms/envs/<name-of-the-new-env>
+
+#. Activate the virtual environment by running:
+
+   .. tabs::
+
+      .. group-tab:: Windows
+
+         .. tabs::
+
+            .. group-tab:: PowerShell
+
+               .. code-block:: powershell
+
+                  C:\foxbms\envs\<name-of-the-new-env>\Scripts\activate.ps1
+
+            .. group-tab:: Git bash
+
+               .. code-block:: shell
+
+                  source /C/foxbms/envs/<name-of-the-new-env>/Scripts/activate
+
+      .. group-tab:: Linux
+
+         .. code-block:: shell
+
+            source /opt/foxbms/envs/<name-of-the-new-env>/bin/activate
+
+#. Install the required packages by running:
+
+   .. note::
+
+      ``pip`` requires a correct proxy setup.
+
+   .. code-block:: shell
+
+      python -m pip install -r requirements.txt
+
+#. Deactivate the virtual environment by running:
+
+   .. code-block:: shell
+
+      deactivate
+
+************************
+Debugger toolchain setup
+************************
+
+For the development of an embedded system both a way of downloading the
+software into the target and debugging the running software in the target is
+necessary.
+Since the setup is highly dependent on the selected toolchain, this
+manual does not give any details on the installation of such a debugger
+toolchain.
+The manuals of the tool vendors are exhaustive on the topic of
+installation and setup.
+
+More details on the selection and usage of debugger toolchains can be
+found in :ref:`DEBUGGING_THE_APPLICATION`.
+
+.. _install_fox_cli_package:
+
+*****************************
+Install the |fox-cli-package|
+*****************************
+
+The |fox-cli-package| (package name: |fox-cli-package-name|) is a Python
+package that provides the |fox-cli| tools.
+The import name of the package is |fox-cli-package-name-import|.
+
+.. note::
+
+   Information on the usage of the |fox-cli-package| can be found
+   :ref:`here<FOX_CLI_PACKAGE>`.
+
+#. Install :ref:`Python<INSTALL_PYTHON>`
+#. Create a
+   `virtual Python environment <https://docs.python.org/3/library/venv.html#creating-virtual-environments>`__
+   for the |fox-cli-package| using following paths depending on the host
+   operating system (replace ``<foxbms-version>`` with the actual version of
+   the |fox-cli-package|):
+
+   - Linux: ``/opt/foxbms/envs/local/<foxbms-version>``
+   - Windows: ``C:\foxbms\envs\local\<foxbms-version>``
+
+#. Activate the virtual environment by running:
+
+   .. tabs::
+
+      .. group-tab:: Windows
+
+         .. tabs::
+
+            .. group-tab:: PowerShell
+
+               .. code-block:: powershell
+
+                  C:\foxbms\envs\local\<foxbms-version>\Scripts\activate.ps1
+
+            .. group-tab:: Git bash
+
+               .. code-block:: shell
+
+                  source /C/foxbms/envs/local/<foxbms-version>/Scripts/activate
+
+      .. group-tab:: Linux
+
+         .. code-block:: shell
+
+            source /opt/foxbms/envs/local/<foxbms-version>/bin/activate
+
+
+#. Install the |fox-cli-package| by running (all operating systems):
+
+   .. code-block:: shell
+
+      python -m pip install foxbms-fox-cli
+
+The package can then be used as follows
+
+- as script:
+
+  .. code-block:: shell
+
+     fox-cli --version
+     fox-cli, version 120.121.122
+
+- as module:
+
+  .. code-block:: shell
+
+     python -m fox_cli --version
+     python -m fox_cli, version 120.121.122
+
+- programmatically:
+
+  .. code-block:: shell
+
+     >>> from fox_cli import cli
+     >>> cli.__version__
+     '120.121.122'
+
+If the repository has already been cloned and Python has been installed, the
+:ref:`install tool<FOX_INSTALL>` can be used to install the |fox-cli-package|
+instead.

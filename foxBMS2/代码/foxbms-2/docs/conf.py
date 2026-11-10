@@ -1,0 +1,856 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2010 - 2026, Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V.
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# We kindly request you to use one or more of the following phrases to refer to
+# foxBMS in your hardware, software, documentation or advertising materials:
+#
+# - "This product uses parts of foxBMS®"
+# - "This product includes parts of foxBMS®"
+# - "This product is derived from foxBMS®"
+
+"""Sphinx configuration file for the documentation"""
+
+import csv
+import hashlib
+import importlib.util
+import json
+import os
+import re
+import shutil
+import sys
+import time
+from dataclasses import dataclass
+from importlib.machinery import SourceFileLoader
+from json import loads
+from multiprocessing.pool import ThreadPool
+from pathlib import Path
+from subprocess import PIPE, Popen
+
+import cantools.database
+import sphinx_rtd_theme  # noqa: F401 pylint: disable=unused-import
+from sphinx.application import Sphinx
+from sphinx.config import Config
+
+ROOT = Path(__file__).resolve().parents[1]
+
+FILE_RE = r"\(in:([a-z_\-0-9]{1,}\.c):([A-Z]{2,5}_.*), fv:((tx)|(rx)), type:(.*)\)"
+FILE_RE_COMPILED = re.compile(FILE_RE)
+WAF_VERSION = "2.1.9-beba77c244731800bf15a003232e7040"
+sys.path = [
+    str(ROOT.resolve()),
+    str((ROOT / "docs").resolve()),
+    str((ROOT / "tools").resolve()),
+    str((ROOT / f"tools/waf3-{WAF_VERSION}").resolve()),
+    str((ROOT / f"tools/.waf3-{WAF_VERSION}").resolve()),
+    str((ROOT / "tools/waf_tools").resolve()),
+] + sys.path
+
+# The top-level 'wscript' has no .py extension, so Python's default import
+# machinery cannot locate it. We register it manually in sys.modules with an
+# explicit SourceFileLoader so that Sphinx autodoc can resolve
+# '.. automodule:: wscript' directives and extract its docstrings.
+wscript_path = ROOT / "wscript"
+if wscript_path.is_file():
+    loader = SourceFileLoader("wscript", str(wscript_path))
+    spec = importlib.util.spec_from_file_location(
+        "wscript", str(wscript_path), loader=loader
+    )
+    wscript_mod = importlib.util.module_from_spec(spec)
+    sys.modules["wscript"] = wscript_mod
+    spec.loader.exec_module(wscript_mod)
+
+
+PACKAGE_COMMANDS = loads(
+    (ROOT / "cli/helpers/supported_commands.json").read_text(encoding="utf-8")
+)
+
+version = "0.0.0"  # Placeholder - overridden by -D version=...
+release = "0.0.0"  # Placeholder - overridden by -D release=...
+project = ""  # placeholder - overridden by -D project=...
+
+project_copyright = (
+    "2010 - 2026, Fraunhofer-Gesellschaft zur Foerderung der angewandten "
+    "Forschung e.V. All rights reserved. See license section for further "
+    "information."
+)
+author = "The foxBMS Team"
+
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.graphviz",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.napoleon",
+    "sphinx_tabs.tabs",
+    "sphinxcontrib.bibtex",
+]
+
+source_suffix = {".rst": "restructuredtext"}
+master_doc = "index"
+
+html_favicon = "_static/fav_icon.ico"
+
+version = time.ctime() + " " + time.tzname[time.daylight]
+release = version
+
+pygments_style = "sphinx"
+
+html_theme = "sphinx_rtd_theme"
+
+html_logo = "_static/foxbms250px.png"
+html_static_path = ["_static"]
+html_css_files = [
+    "css/theme_overrides.css",  # override wide tables in RTD theme
+]
+
+templates_path = ["_templates"]
+
+numfig = True
+
+bibtex_bibfiles = [(ROOT / "docs/references.bib").absolute()]
+bibtex_default_style = "alpha"
+
+# Do not mock waflib: waf_tools uses waf decorators (@conf, @feature, ...),
+# and mocking replaces decorated functions with mock objects in module scope.
+# That prevents autosummary/autodoc from listing these functions.
+autodoc_mock_imports: list[str] = []
+
+linkcheck_ignore = [
+    "https://docs.foxbms.org",
+    r"https:\/\/iisb-foxbms\.iisb\.fraunhofer\.de\/.*[\d|z]\/",
+    # linkcheck can not handle the line highlighting
+    # pylint: disable-next=line-too-long,useless-suppression
+    "https://gitlab.com/ita1024/waf/-/blob/3f8bb163290eb8fbfc3b26d61dd04aa5a6a29d4a/waf-light#L6-30",
+    "https://www.misra.org.uk/",
+]
+
+html_theme_options = {
+    "logo_only": False,
+    "prev_next_buttons_location": "bottom",
+}
+autosummary_generate = True
+autodoc_type_aliases = {
+    "F": "typing.Any",
+    "R": "typing.Any",
+    "V": "typing.Any",
+}
+
+# Build in nit-picky mode, but ignore unresolved references to external
+# libraries/stdlib types that do not provide inventories in this build.
+nitpick_ignore_regex = [
+    (
+        "py:class",
+        r"("
+        r"waflib|"
+        r"matplotlib|"
+        r"collections\.abc|"
+        r"zipfile|"
+        r"click|"
+        r"logging|"
+        r"multiprocessing|"
+        r"git\.repo\.base|"
+        r"pathlib|"
+        r"hashlib|"
+        r"re|"
+        r"can|"
+        r"cantools|"
+        r"tkinter|"
+        r"queue|"
+        r"string|"
+        r"abc|"
+        r"enum|"
+        r"pandas|"
+        r"pyarrow|"
+        r"cmd"
+        r")\..*",
+    ),
+    ("py:class", r"annotated_types\..*"),
+    ("py:class", r"ast\.AST"),
+    ("py:class", r"battery_config_validate_utils\._(float|int)_from_number"),
+    ("py:class", r"Database"),
+    ("py:class", r"database\.can\.message\.Message"),
+    ("py:class", r"Exit code"),
+    ("py:class", r"F"),
+    ("py:class", r"FieldInfo"),
+    ("py:class", r"git\.repo\.base\.Repo"),
+    ("py:class", r"hashlib\._Hash"),
+    ("py:class", r"managers\.ListProxy"),
+    ("py:class", r"Message"),
+    ("py:class", r"NamedSignalValue"),
+    ("py:class", r"Node"),
+    ("py:class", r"NoneType"),
+    ("py:class", r"Path"),
+    ("py:class", r"pathlib\.Path"),
+    ("py:class", r"pd\.DataFrame"),
+    ("py:class", r"Process"),
+    ("py:class", r"pydantic\..*"),
+    ("py:class", r"PydanticUndefined"),
+    ("py:class", r"Queue"),
+    ("py:class", r"QueueListener"),
+    ("py:class", r"R"),
+    ("py:class", r"SizedRotatingLogger"),
+    ("py:class", r"Strict"),
+    ("py:class", r"synchronize\.Event"),
+    ("py:class", r"T"),
+    ("py:class", r"TypeAliasForwardRef"),
+    ("py:class", r"V"),
+    ("py:class", r"waf_tools\.bms_config_model\._.*"),
+    ("py:exc", r"JSONDecodeError"),
+    ("py:exc", r"pandas\.errors\..*"),
+    ("py:exc", r"yaml\.YAMLError"),
+]
+
+sphinx_tabs_valid_builders = ["linkcheck"]
+
+
+# At this point, we are done with setting up Sphinx, and we implement checks
+# and documentation source code generators
+
+
+def log_err(msg: str) -> None:
+    """Print an error message to stderr"""
+    print(msg, file=sys.stderr)
+
+
+def get_directory_hash(directory: Path) -> str:
+    """Calculate a SHA256 hash for all files in a given directory (recursively).
+
+    Args:
+        directory: Path to the directory.
+
+    Returns:
+        The SHA256 hex digest representing the contents of all files.
+    """
+    print(f"Hashing directory: {directory}")
+    hash_obj = hashlib.sha256()
+    for root, _, files in os.walk(directory):
+        for filename in sorted(files):
+            if filename.endswith(".pyc"):
+                continue
+            filepath = os.path.join(root, filename)
+            with open(filepath, "rb") as f:
+                while chunk := f.read(8192):
+                    hash_obj.update(chunk)
+    return hash_obj.hexdigest()
+
+
+def has_directory_changed(directory: Path, hash_file: Path) -> bool:
+    """Check if the directory contents have changed since the last check.
+    Compares the current hash to the stored hash in a file.
+
+    Args:
+        directory: Path to the directory.
+        hash_file: Path to the file storing the previous hash.
+
+    Returns:
+        True if the directory has changed, False otherwise.
+    """
+    new_hash = get_directory_hash(directory)
+    if hash_file.exists():
+        txt = hash_file.read_text(encoding="utf-8")
+        old_hash = json.loads(txt).get("hash")
+        if new_hash == old_hash:
+            return False
+    hash_file.write_text(json.dumps({"hash": new_hash}), encoding="utf-8")
+    return True
+
+
+def _cleanup_autosummary(src: Path, out: Path, hash_file: str, label: str) -> None:
+    """Remove generated autosummary output when its source directory changed."""
+    root = Path(__file__).parent.parent
+    bld_out = root / "build/docs" / out.relative_to(root)
+    bld_doctrees = root / "build/docs/.docstrees" / out.relative_to(root)
+
+    out.mkdir(exist_ok=True, parents=True)
+    bld_out.mkdir(exist_ok=True, parents=True)
+    bld_doctrees.mkdir(exist_ok=True, parents=True)
+
+    if has_directory_changed(src, out.parent / hash_file):
+        print(f"Remove existing autosummary for {label}, to rerun code generation.")
+        shutil.rmtree(out.absolute())
+        shutil.rmtree(bld_out.absolute())
+        shutil.rmtree(bld_doctrees.absolute())
+    else:
+        print(f"Autosummary sources for {label} are uptodate.")
+
+
+def cleanup_autosummary() -> int:
+    """Remove the autodoc created summary to force a rebuild."""
+    _cleanup_autosummary(
+        Path(__file__).parent.parent / "cli",
+        Path(__file__).parent / "developer-manual/fox-cli/cli_autosummary",
+        "cli_autosummary_hash.json",
+        "fox-cli",
+    )
+    _cleanup_autosummary(
+        Path(__file__).parent.parent / "tools/waf_tools",
+        Path(__file__).parent / "tools/waf_tools/waf_tools_autosummary",
+        "waf_tools_autosummary_hash.json",
+        "waf_tools",
+    )
+    return 0
+
+
+def document_can_messages() -> int:
+    """Remove the autodoc created summary to force a rebuild."""
+    txt = """Supported CAN Messages\n----------------------\n"""
+    with open("supported_can_messages.txt", "w", encoding="utf-8") as f:
+        f.write(txt)
+
+    db = cantools.database.load_file(ROOT / "tools/dbc/foxbms.dbc")
+
+    if not isinstance(db, cantools.database.can.database.Database):
+        log_err("DBC file is not of type 'Database'.")
+        return 1
+    tmp = []
+    errors = 0
+
+    # Parse messages
+    for message in db.messages:
+        if message.name == "f_BootloaderVersionInfo":
+            continue
+        if not message.comment:
+            errors += 1
+            log_err(
+                "Could not find comment for message "
+                f"'{message.name}' ({hex(message.frame_id)}) that matches "
+                f"'{FILE_RE}'.",
+            )
+            continue
+
+        comment = FILE_RE_COMPILED.sub("", message.comment)
+        m = FILE_RE_COMPILED.search(message.comment)
+
+        if not m:
+            errors += 1
+            log_err(
+                "Could not find comment for message "
+                f"'{message.name}' ({hex(message.frame_id)}) that matches "
+                f"'{FILE_RE}'.",
+            )
+            continue
+        message_type = m[6]
+        imp_file = m[1]
+        hex_id = f"{message.frame_id:0>3X}h"
+        tmp.append((hex_id, message.name, comment, imp_file, message_type))
+    tmp.sort(key=lambda x: x[0])
+
+    # Categorizing the entries
+    categorized_data: dict[str, list[tuple[str, str, str, str, str]]] = {}
+    for entry in tmp:
+        message_type = entry[4]  # Get the Type of the CAN message
+        if message_type not in categorized_data:
+            # Create a new list for new categories
+            categorized_data[message_type] = []
+        # Append entry to the category list
+        categorized_data[message_type].append(entry)
+
+    txt = """Supported CAN Messages\n----------------------\n\n"""
+    with open("supported_can_messages.txt", "w", encoding="utf-8") as txt_file:
+        txt_file.write(txt)
+
+    # Save data in seperate .csv files
+    for message_type, entries in categorized_data.items():
+        entries.sort(key=lambda x: x[0])
+        title = message_type + "\n" + "^" * len(message_type) + "\n\n"
+        add_csv = (
+            ".. csv-table::\n   :delim: ;\n   :file: ./../../build/docs/"
+            + message_type
+            + ".csv\n   :header-rows: 1\n   :widths: 40, 140, 120, 120\n\n"
+        )
+        with open(message_type + ".csv", "w", encoding="utf-8") as f:
+            f.write("ID; Name; Comment; Implementation file\n")
+            f.writelines([";".join([str(j) for j in i[:-1]]) + "\n" for i in entries])
+        with open("supported_can_messages.txt", "a", encoding="utf-8") as txt_file:
+            txt_file.write(title)
+            txt_file.write(add_csv)
+    return errors
+
+
+def _runner(command: str) -> int:
+    cmd = [sys.executable, "fox.py", *command.split(), "-h"]
+    with Popen(cmd, cwd=ROOT, stdout=PIPE, universal_newlines=True) as p:
+        out = p.communicate()[0]
+    if p.returncode:
+        return p.returncode
+    infix = ""
+    if command:
+        infix = "_" + command.replace(" ", "_")
+    infix += "_"
+    with open(f"fox{infix}help.txt", "w", encoding="utf-8") as f:
+        f.write(".. code-block:: text\n\n")
+        f.write("\n".join([f"   {i}" for i in out.splitlines()]))
+    return 0
+
+
+def gen_fox_bms_help() -> int:
+    """Create bms usage file."""
+    return _runner("bms")
+
+
+def gen_fox_bootloader_help() -> int:
+    """Create bootloader usage file."""
+    return _runner("bootloader")
+
+
+def gen_fox_build_help() -> int:
+    """Create build usage file."""
+    return _runner("waf")
+
+
+def gen_fox_cli_unittest_help() -> int:
+    """Create cli-unittest usage file."""
+    return _runner("cli-unittest")
+
+
+def gen_fox_etl_help() -> int:
+    """Create etl usage file."""
+    return _runner("etl")
+
+
+def gen_fox_etl_filter_help() -> int:
+    """Create etl filter usage file."""
+    return _runner("etl filter")
+
+
+def gen_fox_etl_decode_help() -> int:
+    """Create etl decode usage file."""
+    return _runner("etl decode")
+
+
+def gen_fox_etl_table_help() -> int:
+    """Create etl table usage file."""
+    return _runner("etl table")
+
+
+def gen_fox_etl_convert_help() -> int:
+    """Create etl convert usage file."""
+    return _runner("etl convert")
+
+
+def gen_fox_etl_convert_gamry_help() -> int:
+    """Create etl convert gamry usage file."""
+    return _runner("etl convert gamry")
+
+
+def gen_fox_etl_convert_graphtec_help() -> int:
+    """Create etl convert graphtec usage file."""
+    return _runner("etl convert graphtec")
+
+
+def gen_fox_gui_help() -> int:
+    """Create gui usage file."""
+    return _runner("gui")
+
+
+def gen_generic_help() -> int:
+    """Create 'fox.py' and package usage files."""
+    exit_code = _runner("")
+    if exit_code:
+        return exit_code
+    try:
+        with open(ROOT / "build/docs/fox_help.txt", encoding="utf-8") as f:
+            txt = f.read()
+        with open("fox_cli_package_help.txt", "w", encoding="utf-8") as f:
+            for line in txt.splitlines():
+                if "fox.py" in line:
+                    parts = line.split("fox.py")
+                    line = parts[0] + "fox-cli" + line.split("fox.py")[1]
+                if line.strip().split(" ")[0] in PACKAGE_COMMANDS["unsupported"]:
+                    continue
+                f.write(f"{line}\n")
+    except FileNotFoundError:
+        return 1
+    return 0
+
+
+def gen_fox_ide_help() -> int:
+    """Create ide usage file."""
+    return _runner("ide")
+
+
+def gen_fox_install_help() -> int:
+    """Create install usage file."""
+    return _runner("install")
+
+
+def gen_fox_log_help() -> int:
+    """Create log usage file."""
+    return _runner("log")
+
+
+def gen_fox_misc_help() -> int:
+    """Create misc usage file."""
+    return _runner("misc")
+
+
+def gen_fox_plot_help() -> int:
+    """Create plot usage file."""
+    return _runner("plot")
+
+
+def gen_fox_pre_commit_help() -> int:
+    """Create pre-commit usage file."""
+    return _runner("pre-commit")
+
+
+def gen_fox_run_program_help() -> int:
+    """Create run-program usage file."""
+    return _runner("run-program")
+
+
+def gen_fox_run_script_help() -> int:
+    """Create run-script usage file."""
+    return _runner("run-script")
+
+
+def gen_fox_plot() -> int:
+    """Executes the plot tool to create generate the example for the documentation."""
+    src_dir = ROOT / "docs/tools/fox/plot/img"
+    hash_file = ROOT / "build/docs/fox_plot.json"
+    hash_file.parent.mkdir(exist_ok=True, parents=True)
+    if has_directory_changed(src_dir, hash_file):
+        cmd = [
+            sys.executable,
+            ROOT / "fox.py",
+            "plot",
+            "--data-config",
+            ROOT / "docs/tools/fox/plot/img/csv_config.yaml",
+            "--plot-config",
+            ROOT / "docs/tools/fox/plot/img/plot_config.yaml",
+            "--output",
+            ROOT / "build/docs",
+            ROOT / "docs/tools/fox/plot/img/example_data.csv",
+        ]
+
+        with Popen(cmd, cwd=ROOT) as p:
+            p.communicate()
+        if p.returncode:
+            return p.returncode
+    else:
+        print("fox plot examples are uptodate.")
+    return 0
+
+
+def gen_fox_mqtt() -> int:
+    """Create mqtt usage file."""
+    return _runner("mqtt")
+
+
+def wrapper(func: ...) -> int:
+    """Wrapper"""
+    return func()
+
+
+def validate_python_version_consistency() -> int:
+    """Validate the documented Python version."""
+    # Linux reference: python3.14
+    # Windows reference: py -3.14
+    err = 0
+
+    install_summary = ROOT / "INSTALL.md"
+    install_summary_txt = install_summary.read_text(encoding="utf-8")
+    expected_references = 9
+    if install_summary_txt.count("3.14") != expected_references:
+        log_err(
+            f"File '{install_summary}' does not reference the expected "
+            "Python version 3.14.",
+        )
+        err += 1
+
+    python_setup = ROOT / "cli/helpers/python_setup.py"
+    python_setup_txt = python_setup.read_text(encoding="utf-8")
+    expected_references = 5
+    if python_setup_txt.count("3.14") != expected_references:
+        log_err(
+            f"File '{python_setup}' does not reference the expected Python version 3.14.",
+        )
+        err += 1
+
+    docs = [
+        (ROOT / "docs/getting-started/software-installation.rst", 10),
+        (
+            ROOT
+            / "docs/developer-manual/update-processes/external/update-python-packages.txt",
+            3,
+        ),
+    ]
+    for i, refs in docs:
+        txt = i.read_text(encoding="utf-8")
+        if len(re.findall(r"((py -)|(python))3\.14", txt)) != refs:
+            log_err(
+                f"File '{i}' does not reference the expected Python version 3.14.",
+            )
+            err += 1
+    return err
+
+
+def validate_python_scripts() -> int:
+    """Validate syntax in documentation test files."""
+    err = 0
+    scripts = [
+        i.absolute()
+        for i in [
+            ROOT / "docs/developer-manual/fox-cli/test_foo.py",
+            ROOT / "docs/developer-manual/style-guide/examples/python-006.py",
+            ROOT / "docs/developer-manual/style-guide/examples/python-007.py",
+        ]
+    ]
+    for script in scripts:
+        cmd = [sys.executable, script]
+        with Popen(cmd, cwd=ROOT, universal_newlines=True) as p:
+            p.communicate()
+        err += p.returncode
+    return err
+
+
+def validate_wrapper_invocation() -> int:
+    """Validate the platform/terminal specific wrapper invocation."""
+    err = 0
+    any_fox_wrapper = re.compile(r"\.(\\|\/)fox\.(sh|ps1)")
+    invalid_wrapper_invocation = re.compile(r"(\./fox\.ps1|\.\\fox\.sh)")
+
+    for file_type in ("*.rst", "*.txt"):
+        for file in (ROOT / "docs").rglob(file_type):
+            for ln, line in enumerate(file.read_text(encoding="utf-8").splitlines()):
+                if "fox." not in line:
+                    continue
+                if not any_fox_wrapper.search(line):
+                    continue
+                # 1. we have found a wrapper reference that looks like an
+                #   invocation on the terminal
+                # 2. make sure that .ps1 and .sh use the correct notation
+                if invalid_wrapper_invocation.search(line):
+                    err += 1
+                    log_err(f"{file}:{ln + 1}: Invalid wrapper references.")
+    return err
+
+
+def validate_environment_name() -> int:
+    """Validate the documented Python environment name."""
+    err = 0
+    docs = [
+        (ROOT / "fox.ps1", 1),
+        (ROOT / "fox.sh", 1),
+        (ROOT / "INSTALL.md", 3),
+        (ROOT / "docs/getting-started/software-installation.rst", 7),
+        (ROOT / "docs/software/build-environment/build-environment.rst", 1),
+    ]
+    expected_env_name = "2026-07-pale-fox"
+    for i, refs in docs:
+        txt = i.read_text(encoding="utf-8")
+        if txt.count(expected_env_name) != refs:
+            log_err(f"File '{i}' does not reference the expected environment name.")
+            err += 1
+    return err
+
+
+def validate_requirements_txt_versions() -> int:
+    """Validate the versions specified in the requirements file match the
+    versions in the license information file.
+    """
+    err = 0
+    requirements: list[tuple[str, str]] = []
+    for i in (ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines():
+        txt = i.rsplit("#")[0]
+        txt = txt.rsplit(";")[0]
+        pkg, pkg_version = txt.split("==", maxsplit=2)
+        requirements.append((pkg.strip(), pkg_version.strip()))
+
+    _license: list[tuple[str, str]] = []
+    with open(
+        ROOT / "docs/general/license-tables/external/license-info_python-packages.csv",
+        encoding="utf-8",
+    ) as f:
+        reader = csv.reader(f, delimiter=";")
+        next(reader)  # skip heading
+        for line in reader:
+            pkg, pkg_version = line[0], line[1]
+            _license.append((pkg.strip(), pkg_version.strip()))
+
+    for req, lic in zip(requirements, _license, strict=True):
+        if req != lic:
+            log_err(f"Missmatch:\n Requirements file: {req}\n license file: {lic}")
+            err += 1
+    return err
+
+
+def add_supported_afes_to_toc() -> int:
+    """Create AFE TOC"""
+    afe_root = ROOT / "docs/software/modules/driver/afe"
+    afes = []
+    for i in afe_root.glob("*"):
+        if i.is_dir():
+            afes.extend(afe.relative_to(afe_root).as_posix() for afe in i.glob("*.rst"))
+    afes_txt = """.. toctree::
+   :maxdepth: 1
+   :caption: List of supported AFEs\n\n"""
+    afes_txt += "".join(f"   ./{i}\n" for i in afes)
+
+    Path("supported_afes.txt").write_text(afes_txt, encoding="utf-8")
+
+    return 0
+
+
+def add_supported_temperature_sensors_to_toc() -> int:
+    """Create temperature sensor TOC"""
+    sensor_root = ROOT / "docs/software/modules/driver/ts"
+    sensors = []
+    for i in sensor_root.glob("*"):
+        if i.is_dir():
+            sensors.extend(
+                sensor.relative_to(sensor_root).as_posix() for sensor in i.glob("*.rst")
+            )
+    sensors_txt = """.. toctree::
+   :maxdepth: 1
+   :caption: List of supported temperature sensors\n\n"""
+    sensors_txt += "".join(f"   ./{i}\n" for i in sensors)
+
+    Path("supported_temperature_sensors.txt").write_text(sensors_txt, encoding="utf-8")
+
+    return 0
+
+
+@dataclass
+class AppModule:
+    """Store the 'module' path and the expected docs"""
+
+    src: Path
+    module: str = ""
+    expected_doc: Path = Path()  # dummy value
+    found: bool = False
+    referenced: bool = False
+
+    def __post_init__(self) -> None:
+        """Derive relative document links."""
+        infix = self.src.relative_to(ROOT / "src/app")
+        self.module = self.src.name
+        self.expected_doc = ROOT / f"docs/software/modules/{infix}/{self.src.name}.rst"
+
+
+def validate_app_modules() -> int:
+    """Validate every module has an accompanying documentation"""
+    err = 0
+    src_dirs = [
+        i
+        for i in (ROOT / ("src/app")).glob("*")
+        if i.is_dir() and i.name not in (".vscode")
+    ]
+    modules: list[AppModule] = []
+    for i in src_dirs:
+        modules.extend(
+            AppModule(i)
+            for i in (i).glob("*")
+            if i.is_dir() and i.name not in ("config", "include")
+        )
+
+    txt = (ROOT / "docs/software/modules/modules.rst").read_text(encoding="utf-8")
+
+    for i in modules:
+        if i.expected_doc.is_file():
+            i.found = True
+        else:
+            log_err(
+                f"Module '{i.module}': Implementation '{i.src}' is missing "
+                f"documentation source file at '{i.expected_doc}'.",
+            )
+        expected_ref = (
+            "./"
+            + (i.expected_doc.relative_to(ROOT / "docs/software/modules/")).as_posix()
+        )
+        if expected_ref in txt:
+            i.referenced = True
+        else:
+            log_err(
+                f"Module '{i.module}': Expected reference '{expected_ref}' is missing "
+                f"in {i.expected_doc}.",
+            )
+    if not all([i.found for i in modules] + [i.referenced for i in modules]):
+        err = 1
+    return err
+
+
+def create_doc_sources(_app: Sphinx, _cfg: Config) -> None:
+    """Run source generators and consistency checkers."""
+    functions = [
+        validate_app_modules,
+        validate_python_version_consistency,
+        validate_environment_name,
+        validate_requirements_txt_versions,
+        add_supported_afes_to_toc,
+        add_supported_temperature_sensors_to_toc,
+        cleanup_autosummary,
+        document_can_messages,
+        gen_fox_bms_help,
+        gen_fox_bootloader_help,
+        gen_fox_build_help,
+        gen_fox_cli_unittest_help,
+        gen_fox_etl_help,
+        gen_fox_etl_filter_help,
+        gen_fox_etl_decode_help,
+        gen_fox_etl_table_help,
+        gen_fox_etl_convert_help,
+        gen_fox_etl_convert_gamry_help,
+        gen_fox_etl_convert_graphtec_help,
+        gen_fox_gui_help,
+        gen_generic_help,
+        gen_fox_ide_help,
+        gen_fox_install_help,
+        gen_fox_log_help,
+        gen_fox_misc_help,
+        gen_fox_plot_help,
+        gen_fox_pre_commit_help,
+        gen_fox_run_program_help,
+        gen_fox_run_script_help,
+        gen_fox_plot,
+        validate_wrapper_invocation,
+        validate_python_scripts,
+    ]
+
+    with ThreadPool() as pool:
+        exit_codes = pool.map(wrapper, functions)
+
+    if any(exit_codes):
+        sys.exit(1)
+
+
+def setup(app: Sphinx) -> None:
+    """Custoimze build"""
+
+    # pylint: disable-next=unused-argument
+    def update_project(app: Sphinx, config: Config) -> None:
+        config.version = config.version
+        config.release = config.release
+        config.project = f"{config.project} 2 - {config.version}"
+
+    app.connect("config-inited", update_project)
+    app.connect("config-inited", create_doc_sources)
